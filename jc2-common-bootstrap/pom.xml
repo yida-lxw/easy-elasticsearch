@@ -43,7 +43,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>cn.yzw.jc2.ToolsApplication</mainClass>
+                    <mainClass>cn.yzw.jc2.common.ToolsApplication</mainClass>
                 </configuration>
             </plugin>
         </plugins>

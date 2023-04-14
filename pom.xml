@@ -21,6 +21,7 @@
     </modules>
     <properties>
         <java.version>1.8</java.version>
+        <spring.boot.version>2.3.5.RELEASE</spring.boot.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -43,34 +44,253 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-web</artifactId>
-                <version>2.3.5.RELEASE</version>
+                <version>${spring.boot.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-test</artifactId>
-                <version>2.3.5.RELEASE</version>
+                <version>${spring.boot.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.alibaba</groupId>
                 <artifactId>fastjson</artifactId>
                 <version>1.2.83</version>
             </dependency>
-            <dependency>
-                <groupId>cn.yzw.infra</groupId>
-                <artifactId>yzw-component-tenant</artifactId>
-                <version>1.0.5</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
-    <!--    <build>-->
-    <!--        <plugins>-->
-    <!--            <plugin>-->
-    <!--                <groupId>org.springframework.boot</groupId>-->
-    <!--                <artifactId>spring-boot-maven-plugin</artifactId>-->
-    <!--            </plugin>-->
-    <!--        </plugins>-->
-    <!--    </build>-->
+    <build>
+        <resources>
+            <resource>
+                <filtering>true</filtering>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>**/*.xlsx</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <filtering>false</filtering>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*.xlsx</include>
+                </includes>
+            </resource>
+        </resources>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.github.ekryd.sortpom</groupId>
+                    <artifactId>sortpom-maven-plugin</artifactId>
+                    <version>2.15.0</version>
+                    <configuration>
+                        <skip>true</skip>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>3.1.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>3.0.0-M1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.0.0-M5</version>
+                    <configuration>
+                        <skipTests>true</skipTests>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring.boot.version}</version>
+                    <configuration>
+                        <layers>
+                            <enabled>true</enabled>
+                        </layers>
+                        <excludes>
+                            <!-- 打包的时候忽略lombok，因为lombok值在编译器起作用 -->
+                            <exclude>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </exclude>
+                        </excludes>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>repackage</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>3.0.0-M5</version>
+                    <executions>
+                        <execution>
+                            <id>integration-test</id>
+                            <phase>integration-test</phase>
+                            <goals>
+                                <goal>integration-test</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+
+                    <!--                    <configuration>-->
+                    <!--                        <additionalClasspathElements>-->
+                    <!--                            <additionalClasspathElement>${basedir}/../../target/classes</additionalClasspathElement>-->
+                    <!--                        </additionalClasspathElements>-->
+                    <!--                        <skipTests>false</skipTests>-->
+                    <!--                        <forkCount>1</forkCount>-->
+                    <!--                        <reuseForks>true</reuseForks>-->
+                    <!--                        <includes>-->
+                    <!--                            <include>**/*Test.java</include>-->
+                    <!--                        </includes>-->
+                    <!--                        <excludes>-->
+                    <!--                            <exlcude>PSupsTestBase.java</exlcude>-->
+                    <!--                        </excludes>-->
+                    <!--                        <testFailureIgnore>true</testFailureIgnore>-->
+                    <!--                    </configuration>-->
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>3.0.0-M2</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <encoding>UTF-8</encoding>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.22</version>
+                        </path>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>1.5.1.Final</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <!--定义打包命令指定的环境对应的profileActive变量值-->
+    <profiles>
+
+        <profile>
+            <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>yzw-dev</id>
+                    <url>http://nexus.yzw.cn/repository/yzw-dev/</url>
+                </snapshotRepository>
+            </distributionManagement>
+            <repositories>
+                <repository>
+                    <releases>
+                        <enabled>true</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                    <id>yzw-dev</id>
+                    <url>http://nexus.yzw.cn/repository/yzw-dev-public/</url>
+                </repository>
+            </repositories>
+        </profile>
+        <profile>
+            <id>qa</id>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>yzw-qa</id>
+                    <url>http://nexus.yzw.cn/repository/yzw-qa/</url>
+                </snapshotRepository>
+            </distributionManagement>
+            <repositories>
+                <repository>
+                    <releases>
+                        <enabled>true</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                    <id>yzw-qa</id>
+                    <url>http://nexus.yzw.cn/repository/yzw-qa-public/</url>
+                </repository>
+            </repositories>
+        </profile>
+        <profile>
+            <id>stg</id>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>yzw-stg</id>
+                    <url>http://nexus.yzw.cn/repository/yzw-stg/</url>
+                </snapshotRepository>
+            </distributionManagement>
+            <repositories>
+                <repository>
+                    <releases>
+                        <enabled>true</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                    <id>yzw-stg</id>
+                    <url>http://nexus.yzw.cn/repository/yzw-stg-public/</url>
+                </repository>
+            </repositories>
+        </profile>
+        <profile>
+            <id>prd</id>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>yzw-prd</id>
+                    <url>http://nexus.yzw.cn/repository/yzw-prd/</url>
+                </snapshotRepository>
+            </distributionManagement>
+            <repositories>
+                <repository>
+                    <releases>
+                        <enabled>true</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>true</enabled>
+                    </snapshots>
+                    <id>yzw-prd</id>
+                    <url>http://nexus.yzw.cn/repository/yzw-prd-public/</url>
+                </repository>
+            </repositories>
+        </profile>
+    </profiles>
+
+    <!-- jar包发布地址 -->
+    <distributionManagement>
+        <repository>
+            <id>yzw-release</id>
+            <url>http://nexus.yzw.cn/repository/maven-releases/</url>
+        </repository>
+    </distributionManagement>
 
 </project>
