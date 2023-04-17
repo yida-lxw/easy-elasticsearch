@@ -198,9 +198,7 @@
 
         <profile>
             <id>dev</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
+
             <distributionManagement>
                 <snapshotRepository>
                     <id>yzw-dev</id>
@@ -222,6 +220,9 @@
         </profile>
         <profile>
             <id>qa</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <distributionManagement>
                 <snapshotRepository>
                     <id>yzw-qa</id>
