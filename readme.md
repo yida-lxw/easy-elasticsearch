@@ -13,16 +13,26 @@
 ## 接入说明
 
 jc2-common-elastic-search： 项目正常配置es的地址，初始化EsQueryClient。示例如下：
-@Bean
-public EsQueryClient esQueryClient() {
-return new EsQueryClient();
+```java
+
+public class BeanConfig{
+    @Bean
+    public EsQueryClient esQueryClient() {
+        return new EsQueryClient();
+    } 
 }
+
+```
 
 jc2-common-dmigrate： 实现接口{DMigrationService，ExchangeStrategyService},初始化DataExchangeDealClient，示例如下：
-@Bean
-public DataExchangeDealClient client() {
-return new DataExchangeDealClient();
+```java
+public class BeanConfig{
+    @Bean
+    public DataExchangeDealClient client() {
+        return new DataExchangeDealClient();
+    }
 }
 
+```
 jc2-common-utils： 开箱即用
 
