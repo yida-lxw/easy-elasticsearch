@@ -11,8 +11,8 @@
     <artifactId>jc2-common</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>tools</name>
-    <description>tools</description>
+    <name>jc2-common</name>
+    <description>集采2通用组件</description>
     <modules>
         <module>jc2-common-bootstrap</module>
         <module>jc2-common-elastic-search</module>
