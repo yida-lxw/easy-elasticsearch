@@ -80,7 +80,7 @@ public class EsQueryParse {
         return searchRequest;
     }
 
-    public static <E> SearchRequest convert2Query(SearchAfterRequest<E> searchAfterRequest) {
+    public static <E> SearchRequest convertSearchAfter2Query(SearchAfterRequest<E> searchAfterRequest) {
 
         //构建查询
         SearchSourceBuilder sourceBuilder = buildBoolQueryBuilder(searchAfterRequest);
@@ -100,7 +100,7 @@ public class EsQueryParse {
         return searchRequest;
     }
 
-    public static <E> SearchRequest convert2ScrollQuery(ScrollRequest<E> scrollRequest) {
+    public static <E> SearchRequest convertScroll2Query(ScrollRequest<E> scrollRequest) {
 
         //构建查询
         SearchSourceBuilder sourceBuilder = buildBoolQueryBuilder(scrollRequest);

@@ -25,6 +25,7 @@ import org.elasticsearch.search.SearchHits;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StopWatch;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -62,7 +63,8 @@ public class EsQueryClient {
     public <E, O> SearchPageResult<O> search(SearchPageRequest<E> request, Class<O> oclass) {
 
         SearchPageResult<O> pageResult = new SearchPageResult<>();
-
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         try {
             if (Boolean.TRUE.equals(request.getSleep())) {
                 try {
@@ -84,9 +86,12 @@ public class EsQueryClient {
             pageResult.setPageNum(request.getPageNum());
             pageResult.setPageSize(request.getPageSize());
             pageResult.setTotalPage(
-                Long.valueOf((pageResult.getTotalCount() - 1) / Long.valueOf(request.getPageSize()) + 1L).intValue());
+                    Long.valueOf((pageResult.getTotalCount() - 1) / Long.valueOf(request.getPageSize()) + 1L).intValue());
         } catch (IOException ex) {
             log.error("es查询时出现异常, index: {}, params: {}", request.getIndex(), request, ex);
+        } finally {
+            stopWatch.stop();
+            log.info("EsQueryClient.search耗时{}", stopWatch.getTotalTimeMillis());
         }
         return pageResult;
     }
@@ -101,8 +106,9 @@ public class EsQueryClient {
     public <E, O> SearchAfterResult<O> searchAfter(SearchAfterRequest<E> request, Class<O> oclass) {
 
         SearchAfterResult<O> pageResult = new SearchAfterResult<>();
+        StopWatch stopWatch = new StopWatch();
         try {
-            SearchRequest searchRequest = EsQueryParse.convert2Query(request);
+            SearchRequest searchRequest = EsQueryParse.convertSearchAfter2Query(request);
             SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
 
             List<O> list = getRs(oclass, searchResponse);
@@ -118,6 +124,9 @@ public class EsQueryClient {
             }
         } catch (IOException ex) {
             log.error("es查询时出现异常, index: {}, params: {}", request.getIndex(), request, ex);
+        } finally {
+            stopWatch.stop();
+            log.info("EsQueryClient.searchAfter耗时{}", stopWatch.getTotalTimeMillis());
         }
         return pageResult;
     }
@@ -129,11 +138,12 @@ public class EsQueryClient {
      */
     public <E, O> ScrollResult<O> scroll(ScrollRequest<E> request, Class<O> oclass) {
         ScrollResult<O> pageResult = new ScrollResult<>();
+        StopWatch stopWatch = new StopWatch();
         try {
             SearchResponse searchResponse;
             //第一次处理
             if (StringUtils.isBlank(request.getScrollId())) {
-                SearchRequest searchRequest = EsQueryParse.convert2ScrollQuery(request);
+                SearchRequest searchRequest = EsQueryParse.convertScroll2Query(request);
                 searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
                 //根据游标滚动
             } else {
@@ -153,6 +163,9 @@ public class EsQueryClient {
             }
         } catch (IOException ex) {
             log.error("es查询时出现异常, index: {}, params: {}", request.getIndex(), request, ex);
+        } finally {
+            stopWatch.stop();
+            log.info("EsQueryClient.scroll耗时{}", stopWatch.getTotalTimeMillis());
         }
         return pageResult;
     }
