@@ -1,6 +1,5 @@
 package cn.yzw.jc2.common.controller;
 
-import cn.yzw.jc2.common.search.request.EsOrgMultiQuery;
 import cn.yzw.jc2.common.search.annotation.EsEquals;
 import cn.yzw.jc2.common.search.annotation.EsLike;
 import cn.yzw.jc2.common.search.annotation.EsMulti;
