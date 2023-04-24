@@ -9,6 +9,7 @@
 | `jc2-common-dmigrate`       | 数据迁移  |
 | `jc2-common-elastic-search` | es 检索 |
 | `jc2-common-utils`          | 工具包   |
+| `jc2-common-retry`          | 重试任务  |
 
 ## 接入说明
 
@@ -36,6 +37,10 @@ public class BeanConfig{
 ```
 jc2-common-utils： 开箱即用
 
+```
+jc2-common-retrey： 见接入文档https://alidocs.dingtalk.com/i/nodes/ZX6GRezwJl7dDg75t1OEQloyVdqbropQ
+
+```
 ## 版本说明
 jc2-common-dmigrate（数据迁移）
 
