@@ -5,11 +5,11 @@ import cn.yzw.infra.component.utils.DateUtils;
 import cn.yzw.jc2.common.retry.config.RetryTaskConfig;
 import cn.yzw.jc2.common.retry.entity.RetryCreateTask;
 import cn.yzw.jc2.common.retry.entity.RetryTaskDO;
-import cn.yzw.jc2.common.retry.enums.BizSequencePriorityEnum;
+import cn.yzw.jc2.common.retry.enums.RetryTaskPriorityCheckEnums;
 import cn.yzw.jc2.common.retry.enums.RetryTaskStatusEnum;
 import cn.yzw.jc2.common.retry.mapper.RetryTaskMapper;
 import cn.yzw.jc2.common.retry.annotation.RetryTask;
-import cn.yzw.jc2.common.retry.service.RetryTaskBizMethodHolder;
+import cn.yzw.jc2.common.retry.entity.RetryTaskBizMethodHolder;
 import cn.yzw.jc2.common.retry.service.RetryTaskDomainService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -63,18 +63,14 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
         RetryTaskDO retryTaskDO = RetryTaskDO.builder().retryTaskNo(createTask.getRetryTaskNo())
             .bizKey(createTask.getBizKey()).bizSequenceKey(createTask.getBizSequenceKey())
             .bizSequencePriority(createTask.getBizSequencePriority() == null ? 0 : createTask.getBizSequencePriority())
-            .bizSequenceCanExeSecondTime(createTask.getBizSequenceCanExeSecondTime())
+            .bizSequenceCanExecSecondTime(createTask.getBizSequenceCanExecSecondTime())
             .bizSequencePrevCheck(
-                (Boolean.TRUE.equals(createTask.getBizSequencePrevCheck()) ? Byte.valueOf("1") : Byte.valueOf("0")))
+                RetryTaskPriorityCheckEnums.NO.name().equals(createTask.getBizSequencePrevCheck())
+                    ? RetryTaskPriorityCheckEnums.NO.name()
+                    : RetryTaskPriorityCheckEnums.YES.name())
             .taskPlanExecTime(createTask.getTaskPlanExecTime() != null ? createTask.getTaskPlanExecTime() : new Date())
             .taskExecStatus(RetryTaskStatusEnum.PENDING.name()).taskExecCount(0).taskData(createTask.getTaskData())
             .tableName(retryTaskConfig.getTableName()).build();
-        //如果设置了顺序，优先级默认从0递增
-        if (StringUtils.isNotBlank(createTask.getBizSequenceKey())
-            && Boolean.TRUE.equals(createTask.getBizSequencePrevCheck())
-            && createTask.getBizSequencePriorityPrev() == null) {
-            createTask.setBizSequencePriorityPrev(retryTaskDO.getBizSequencePriority() - 1);
-        }
         retryTaskMapper.insert(retryTaskDO);
         return retryTaskDO.getRetryTaskNo();
     }
@@ -236,20 +232,22 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
     /**
      * 上一个优先级的业务是非执行成功的状态或者不存在，那么当前业务创建后，允许多久时间后可执行
      * 时间单位为秒
-     * 如果不设置，上一个业务不存在或者没执行成功，当前业务不允许执行
+     * 如果不设置，上一个业务没执行成功，当前业务不允许执行
      */
     private boolean validatePrevBizSequenceTask(String bizKey, RetryTaskDO taskDO) {
-        if (taskDO.getBizSequenceKey() != null && taskDO.getBizSequencePriorityPrev() != null
-            && taskDO.getBizSequencePrevCheck() == 1) {
-            RetryTaskDO preRetryTaskDO = retryTaskMapper.selectPrevBizSequenceTask(taskDO.getBizSequenceKey(), bizKey,
-                taskDO.getBizSequencePriorityPrev(), retryTaskConfig.getTableName());
-            if (preRetryTaskDO != null
-                && RetryTaskStatusEnum.SUCCESS.name().equals(preRetryTaskDO.getTaskExecStatus())) {
-                return true;
+        //0为顶级不校验
+        if (taskDO.getBizSequenceKey() != null && taskDO.getBizSequencePriority() != null
+            && taskDO.getBizSequencePriority() > 0) {
+            List<RetryTaskDO> preRetryTaskDOList = retryTaskMapper.selectPrevBizSequenceTask(taskDO.getBizSequenceKey(),
+                bizKey, taskDO.getBizSequencePriority(), retryTaskConfig.getTableName());
+            if (CollectionUtils.isEmpty(preRetryTaskDOList)) {
+                return RetryTaskPriorityCheckEnums.YES.name().equals(taskDO.getBizSequencePrevCheck());
             } else {
-                return taskDO.getBizSequenceCanExeSecondTime() != null
-                       && DateUtils.addSeconds(taskDO.getCreateTime(), taskDO.getBizSequenceCanExeSecondTime())
-                           .compareTo(new Date()) > 0;
+                List<RetryTaskDO> taskDOList = preRetryTaskDOList.stream()
+                    .filter(e -> !e.getTaskExecStatus().equals(RetryTaskStatusEnum.SUCCESS.name()))
+                    .collect(Collectors.toList());
+                //存在优先级高的任务没执行成功，优先级低的任务不允许执行
+                return CollectionUtils.isEmpty(taskDOList);
             }
         } else {
             return true;

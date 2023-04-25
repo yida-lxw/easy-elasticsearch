@@ -5,7 +5,7 @@ package cn.yzw.jc2.common.retry.enums;
  * @Author: lbl 
  * @Date: 2023/4/23
  **/
-public interface BizSequencePriorityEnum {
+public interface BizSequencePriorityConstant {
     /**
      * 顶层，不需要校验上一级
      */

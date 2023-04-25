@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -87,19 +88,17 @@ public class RetryTaskDO implements Serializable {
      * 业务执行优先级,如果设置了业务串行key，那么优先级必须设置，不设置不保证顺序执行，默认为0
      */
     private Integer bizSequencePriority;
-    /**
-     * 业务执行优先级，当前优先级的上一个优先级,不设置默认当前优先级-1
-     */
-    private Integer bizSequencePriorityPrev;
 
     /**
      * 上一个优先级的业务是非执行成功的状态或者不存在，那么当前业务创建后，允许多久时间后可执行
      * 时间单位为秒
-     * 如果不设置，上一个业务不存在或者没执行成功，当前业务不允许执行
+     * 如果不设置，上一个业务没执行成功，当前业务不允许执行
      */
-    private Long    bizSequenceCanExeSecondTime;
+    private Long    bizSequenceCanExecSecondTime;
     /**
-     * 是否校验上一级，默认不校验，
+     * 优先级高的任务不存在，优先级低的任务是否允许执行，例如bizSequencePriority=2，但是不存在<2的任务，2是否可以执行
+     * NO表示不可以执行，YES表示可以执行，默认为YES,可以执行
+     * RetryTaskPriorityCheckEnums
      */
-    private Byte    bizSequencePrevCheck;
+    private String  bizSequencePrevCheck;
 }

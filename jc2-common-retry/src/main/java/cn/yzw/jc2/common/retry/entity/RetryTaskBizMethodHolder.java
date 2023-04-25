@@ -1,4 +1,4 @@
-package cn.yzw.jc2.common.retry.service;
+package cn.yzw.jc2.common.retry.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
