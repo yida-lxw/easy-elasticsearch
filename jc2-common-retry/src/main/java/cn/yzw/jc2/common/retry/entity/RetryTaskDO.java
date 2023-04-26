@@ -75,12 +75,13 @@ public class RetryTaskDO implements Serializable {
     private String  taskExecMsg;
 
     /**
-     * 业务唯一key或者编号，唯一key相同的任务根据ID顺序串行执行
+     * 任务唯一序列号，
+     * 序列号相同的任务根据ID顺序串行执行，例如同一个业务单据，发送代办，完成代办，撤销代办
      */
-    private String  bizSequenceKey;
+    private String  bizSequenceNo;
 
     /**
-     * 业务执行优先级,如果设置了业务串行key，那么优先级必须设置，不设置不保证顺序执行，默认为0
+     * 业务执行优先级,如果设置了序列号，那么优先级必须设置，不设置不保证顺序执行，默认为0
      */
     private Integer bizSequencePriority;
 
@@ -91,9 +92,10 @@ public class RetryTaskDO implements Serializable {
      */
     private Long    bizSequenceCanExecSecondTime;
     /**
+     * 低优先记业务是否允许执行
      * 优先级高的任务不存在，优先级低的任务是否允许执行，例如bizSequencePriority=2，但是不存在<2的任务，2是否可以执行
      * NO表示不可以执行，YES表示可以执行，默认为YES,可以执行
      * RetryTaskPriorityCheckEnums
      */
-    private String  bizSequencePrevCheck;
+    private String  bizSequenceLowPriorityCanExec;
 }

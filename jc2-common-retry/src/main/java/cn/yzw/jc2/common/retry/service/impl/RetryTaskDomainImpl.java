@@ -1,7 +1,6 @@
 package cn.yzw.jc2.common.retry.service.impl;
 
 import cn.yzw.infra.component.utils.AssertUtils;
-import cn.yzw.infra.component.utils.DateUtils;
 import cn.yzw.jc2.common.retry.config.RetryTaskConfig;
 import cn.yzw.jc2.common.retry.entity.RetryCreateTask;
 import cn.yzw.jc2.common.retry.entity.RetryTaskDO;
@@ -61,11 +60,11 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
         AssertUtils.notBlank(createTask.getBizKey(), "业务key不能为空");
         AssertUtils.notBlank(createTask.getTaskData(), "重试任务数据不能为空");
         RetryTaskDO retryTaskDO = RetryTaskDO.builder().retryTaskNo(createTask.getRetryTaskNo())
-            .bizKey(createTask.getBizKey()).bizSequenceKey(createTask.getBizSequenceKey())
+            .bizKey(createTask.getBizKey()).bizSequenceNo(createTask.getBizSequenceNo())
             .bizSequencePriority(createTask.getBizSequencePriority() == null ? 0 : createTask.getBizSequencePriority())
             .bizSequenceCanExecSecondTime(createTask.getBizSequenceCanExecSecondTime())
-            .bizSequencePrevCheck(
-                RetryTaskPriorityCheckEnums.NO.name().equals(createTask.getBizSequencePrevCheck())
+            .bizSequenceLowPriorityCanExec(
+                RetryTaskPriorityCheckEnums.NO.name().equals(createTask.getBizSequenceLowPriorityCanExec())
                     ? RetryTaskPriorityCheckEnums.NO.name()
                     : RetryTaskPriorityCheckEnums.YES.name())
             .taskPlanExecTime(createTask.getTaskPlanExecTime() != null ? createTask.getTaskPlanExecTime() : new Date())
@@ -131,8 +130,8 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
         if (taskDO == null) {
             return;
         }
-        String bizUniqueKey = taskDO.getBizSequenceKey();
-        if (StringUtils.isBlank(bizUniqueKey)) {
+        String bizSequenceNo = taskDO.getBizSequenceNo();
+        if (StringUtils.isBlank(bizSequenceNo)) {
             //不需要保证执行顺序
             this.execTask(taskDO.getRetryTaskNo(), taskDO.getBizKey());
         } else {
@@ -140,12 +139,12 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
             boolean lockSuccess = false;
             try {
                 //有顺序执行
-                lock = redissonClient.getLock(buildExecLockKey(bizUniqueKey));
+                lock = redissonClient.getLock(buildExecLockKey(bizSequenceNo));
                 lockSuccess = lock.tryLock(0L, 600 * 1000L, TimeUnit.MILLISECONDS);
                 if (lockSuccess) {
                     List<RetryTaskDO> retryTaskDOList = retryTaskMapper.selectExecutableTaskBybizSequenceKey(
                         retryTaskConfig.getTimeOutStartTime(), retryTaskConfig.getRetryTaskMaxRetryTimes(),
-                        bizUniqueKey, retryTaskConfig.getTableName());
+                        bizSequenceNo, retryTaskConfig.getTableName());
                     List<String> noExecRetryTaskNoList = retryTaskDOList.stream().map(RetryTaskDO::getRetryTaskNo)
                         .collect(Collectors.toList());
                     for (RetryTaskDO retryTaskDO : retryTaskDOList) {
@@ -157,14 +156,14 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                     }
                     if (CollectionUtils.isNotEmpty(noExecRetryTaskNoList)) {
                         retryTaskMapper.updateResultStatusByNoList(noExecRetryTaskNoList,
-                            RetryTaskStatusEnum.FAIL.name(), "相同biz_unique_key的前置任务未执行或执行失败",
+                            RetryTaskStatusEnum.FAIL.name(), "相同bizSequenceNo的前置任务未执行或执行失败",
                             retryTaskConfig.getTableName());
                     }
                 } else {
-                    log.info("重试任务-跳过执行-未获取到执行锁，bizUniqueKey：{}", bizUniqueKey);
+                    log.info("重试任务-跳过执行-未获取到执行锁，bizSequenceNo：{}", bizSequenceNo);
                 }
             } catch (Exception e) {
-                log.warn("重试任务-执行异常，bizUniqueKey：{}", bizUniqueKey, e);
+                log.warn("重试任务-执行异常，bizSequenceNo：{}", bizSequenceNo, e);
             } finally {
                 if (lock != null && lockSuccess) {
                     lock.unlock();
@@ -236,12 +235,12 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
      */
     private boolean validatePrevBizSequenceTask(String bizKey, RetryTaskDO taskDO) {
         //0为顶级不校验
-        if (taskDO.getBizSequenceKey() != null && taskDO.getBizSequencePriority() != null
+        if (taskDO.getBizSequenceNo() != null && taskDO.getBizSequencePriority() != null
             && taskDO.getBizSequencePriority() > 0) {
-            List<RetryTaskDO> preRetryTaskDOList = retryTaskMapper.selectPrevBizSequenceTask(taskDO.getBizSequenceKey(),
+            List<RetryTaskDO> preRetryTaskDOList = retryTaskMapper.selectPrevBizSequenceTask(taskDO.getBizSequenceNo(),
                 bizKey, taskDO.getBizSequencePriority(), retryTaskConfig.getTableName());
             if (CollectionUtils.isEmpty(preRetryTaskDOList)) {
-                return RetryTaskPriorityCheckEnums.YES.name().equals(taskDO.getBizSequencePrevCheck());
+                return RetryTaskPriorityCheckEnums.YES.name().equals(taskDO.getBizSequenceLowPriorityCanExec());
             } else {
                 List<RetryTaskDO> taskDOList = preRetryTaskDOList.stream()
                     .filter(e -> !e.getTaskExecStatus().equals(RetryTaskStatusEnum.SUCCESS.name()))
