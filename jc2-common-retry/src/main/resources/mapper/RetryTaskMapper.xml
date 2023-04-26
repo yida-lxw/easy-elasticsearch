@@ -21,7 +21,7 @@
     <sql id="Base_Column_List">
         id
         , create_time, update_time, retry_task_no, biz_key, task_plan_exec_time, task_start_time,
-    task_exec_status, task_exec_count, task_data, retry_batch_no, task_exec_msg, biz_sequence_no,biz_sequence_priority
+    task_exec_status, task_exec_count, task_data, task_exec_msg, biz_sequence_no,biz_sequence_priority
         ,biz_sequence_can_exec_second_time,biz_sequence_low_priority_can_exec
     </sql>
     <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="BaseResultMap">
