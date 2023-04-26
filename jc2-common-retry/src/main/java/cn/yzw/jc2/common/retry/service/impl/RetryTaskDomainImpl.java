@@ -159,7 +159,7 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                 lock = redissonClient.getLock(buildExecLockKey(bizSequenceNo));
                 lockSuccess = lock.tryLock(0L, 600 * 1000L, TimeUnit.MILLISECONDS);
                 if (lockSuccess) {
-                    List<RetryTaskDO> retryTaskDOList = retryTaskMapper.selectExecutableTaskBybizSequenceKey(
+                    List<RetryTaskDO> retryTaskDOList = retryTaskMapper.selectExecTaskByBizSequenceNo(
                         retryTaskConfig.getTimeOutStartTime(), retryTaskConfig.getRetryTaskMaxRetryTimes(),
                         bizSequenceNo, retryTaskConfig.getTableName());
                     List<String> noExecRetryTaskNoList = retryTaskDOList.stream().map(RetryTaskDO::getRetryTaskNo)

@@ -177,8 +177,8 @@
         where biz_sequence_no = #{bizSequenceNo} and biz_key = #{bizKey}
         and biz_sequence_priority <![CDATA[<]]> #{bizSequencePriority}
     </select>
-    <select id="selectExecutableTaskBybizSequenceNo" resultMap="BaseResultMap">
-        select /* RetryTaskMapper-selectExecutableTaskBybizSequenceNo */
+    <select id="selectExecTaskByBizSequenceNo" resultMap="BaseResultMap">
+        select /* RetryTaskMapper-selectExecTaskByBizSequenceNo */
         <include refid="Base_Column_List"/>
         from ${tableName}
         <![CDATA[

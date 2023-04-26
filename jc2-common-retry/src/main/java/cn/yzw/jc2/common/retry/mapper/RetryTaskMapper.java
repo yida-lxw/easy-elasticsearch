@@ -48,7 +48,7 @@ public interface RetryTaskMapper {
                                           @Param("bizSequencePriority") Integer bizSequencePriority,
                                           @Param("tableName") String tableName);
 
-    List<RetryTaskDO> selectExecutableTaskBybizSequenceKey(@Param("timeOutStartTime") Date timeOutStartTime,
+    List<RetryTaskDO> selectExecTaskByBizSequenceNo(@Param("timeOutStartTime") Date timeOutStartTime,
                                                            @Param("maxRetryTimes") Integer maxRetryTimes,
                                                            @Param("bizSequenceKey") String bizSequenceKey,
                                                            @Param("tableName") String tableName);
