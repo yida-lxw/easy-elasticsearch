@@ -27,6 +27,7 @@ import org.springframework.core.annotation.AnnotatedElementUtils;
 import javax.annotation.Resource;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +57,23 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
 
     @Override
     public String createTask(RetryCreateTask createTask) {
+        RetryTaskDO retryTaskDO = buildTaskDO(createTask);
+        retryTaskMapper.insert(retryTaskDO);
+        return retryTaskDO.getRetryTaskNo();
+    }
+
+    @Override
+    public List<String> batchCreateTask(List<RetryCreateTask> createTaskList) {
+        List<RetryTaskDO> saveList = new ArrayList<>(createTaskList.size());
+        createTaskList.forEach(createTask -> {
+            RetryTaskDO retryTaskDO = buildTaskDO(createTask);
+            saveList.add(retryTaskDO);
+        });
+        retryTaskMapper.batchInsert(saveList, retryTaskConfig.getTableName());
+        return saveList.stream().map(RetryTaskDO::getRetryTaskNo).collect(Collectors.toList());
+    }
+
+    private RetryTaskDO buildTaskDO(RetryCreateTask createTask) {
         AssertUtils.notBlank(createTask.getRetryTaskNo(), "重试任务唯一编号不能为空");
         AssertUtils.notBlank(createTask.getBizKey(), "业务key不能为空");
         AssertUtils.notBlank(createTask.getTaskData(), "重试任务数据不能为空");
@@ -70,8 +88,7 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
             .taskPlanExecTime(createTask.getTaskPlanExecTime() != null ? createTask.getTaskPlanExecTime() : new Date())
             .taskExecStatus(RetryTaskStatusEnum.PENDING.name()).taskExecCount(0).taskData(createTask.getTaskData())
             .tableName(retryTaskConfig.getTableName()).build();
-        retryTaskMapper.insert(retryTaskDO);
-        return retryTaskDO.getRetryTaskNo();
+        return retryTaskDO;
     }
 
     @Override

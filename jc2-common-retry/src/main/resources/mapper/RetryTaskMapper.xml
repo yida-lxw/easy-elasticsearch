@@ -55,6 +55,23 @@
                 #{taskExecMsg}, #{bizSequenceNo}, #{bizSequencePriority}
                    , #{bizSequenceCanExecSecondTime}, #{bizSequenceLowPriorityCanExec})
     </insert>
+    <insert id="batchInsert">
+        insert into ${tableName} (retry_task_no, biz_key, task_plan_exec_time,
+        task_start_time,
+        task_exec_status, task_exec_count, task_data,
+        task_exec_msg, biz_sequence_no,
+        biz_sequence_priority,
+        biz_sequence_can_exec_second_time,
+        biz_sequence_low_priority_can_exec
+        )
+        values
+        <foreach collection="taskDOList" item="item" separator=",">
+            (#{item.retryTaskNo}, #{item.bizKey}, #{item.taskPlanExecTime}, #{item.taskStartTime},
+            #{item.taskExecStatus}, #{item.taskExecCount}, #{item.taskData},
+            #{item.taskExecMsg}, #{item.bizSequenceNo}, #{item.bizSequencePriority}
+            , #{item.bizSequenceCanExecSecondTime}, #{item.bizSequenceLowPriorityCanExec})
+        </foreach>
+    </insert>
 
     <update id="updateByPrimaryKeySelective" parameterType="cn.yzw.jc2.common.retry.entity.RetryTaskDO">
         update /* RetryTaskMapper-updateByPrimaryKeySelective */ ${tableName}

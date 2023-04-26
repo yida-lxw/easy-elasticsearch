@@ -21,6 +21,12 @@ public interface RetryTaskDomainService {
     String createTask(RetryCreateTask createTask);
 
     /**
+     * 批量创建创建重试任务，重试任务如果设置了优先级，优先级最好从0开始
+     * @return 重试任务编号
+     */
+    List<String> batchCreateTask(List<RetryCreateTask> createTaskList);
+
+    /**
      * 同步执行重试任务
      * 重要!!! syncExecTask不能和createTask放在一个事务里,创建任务事务提交后,才能执行任务
      * 如果任务的biz_unique_key不为空，则会将具有相同的biz_unique_key的任务都查询出来，根据任务ID串行执行

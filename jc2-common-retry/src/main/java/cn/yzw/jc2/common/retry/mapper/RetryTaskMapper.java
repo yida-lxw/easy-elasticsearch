@@ -13,6 +13,8 @@ public interface RetryTaskMapper {
 
     int insert(RetryTaskDO record);
 
+    int batchInsert(@Param("taskDOList") List<RetryTaskDO> taskDOList, @Param("tableName") String tableName);
+
     RetryTaskDO selectByPrimaryKey(@Param("id") Long id, @Param("tableName") String tableName);
 
     RetryTaskDO selectByNo(@Param("retryTaskNo") String retryTaskNo, @Param("tableName") String tableName);

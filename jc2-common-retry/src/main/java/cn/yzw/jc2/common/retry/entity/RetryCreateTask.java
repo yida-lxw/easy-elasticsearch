@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotBlank;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -17,11 +18,13 @@ public class RetryCreateTask implements Serializable {
     /**
      * 重试任务唯一编号，需要接入方使用分布式id生成器生成
      */
+    @NotBlank
     private String  retryTaskNo;
 
     /**
      * 业务key,关联代码里的重试方法，不同的业务不能重复
      */
+    @NotBlank
     private String  bizKey;
 
     /**
@@ -32,6 +35,7 @@ public class RetryCreateTask implements Serializable {
     /**
      * 任务数据
      */
+    @NotBlank
     private String  taskData;
 
     /**
