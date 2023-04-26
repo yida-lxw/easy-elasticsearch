@@ -31,9 +31,6 @@ public interface RetryTaskMapper {
     int updateExecutingStatusByNo(@Param("retryTaskNo") String retryTaskNo,
                                   @Param("taskExecStatus") String taskExecStatus, @Param("tableName") String tableName);
 
-    int markRetryBatchNoByTaskNos(@Param("list") List<String> retryTaskNos, @Param("retryBatchNo") String retryBatchNo,
-                                  @Param("tableName") String tableName);
-
     int deleteByNo(@Param("retryTaskNo") String retryTaskNo, @Param("tableName") String tableName);
 
     int resetByNo(@Param("retryTaskNo") String retryTaskNo, @Param("tableName") String tableName);
@@ -41,7 +38,7 @@ public interface RetryTaskMapper {
     List<RetryTaskDO> selectExecutableTask(@Param("timeOutStartTime") Date timeOutStartTime,
                                            @Param("maxRetryTimes") Integer maxRetryTimes,
                                            @Param("pageSize") Integer pageSize,
-                                           @Param("retryBatchNo") String retryBatchNo,
+                                           @Param("minId") Long minId,
                                            @Param("tableName") String tableName);
 
     List<RetryTaskDO> selectPrevBizSequenceTask(@Param("bizSequenceKey") String bizSequenceKey,

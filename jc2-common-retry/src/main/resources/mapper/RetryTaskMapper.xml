@@ -12,7 +12,6 @@
         <result column="task_exec_status" property="taskExecStatus"/>
         <result column="task_exec_count" property="taskExecCount"/>
         <result column="task_data" property="taskData"/>
-        <result column="retry_batch_no" property="retryBatchNo"/>
         <result column="task_exec_msg" property="taskExecMsg"/>
         <result column="biz_sequence_key" property="bizSequenceKey"/>
         <result column="biz_sequence_priority" property="bizSequencePriority"/>
@@ -47,13 +46,13 @@
         insert into /* RetryTaskMapper-insert */ ${tableName} (retry_task_no, biz_key, task_plan_exec_time,
                                                                task_start_time,
                                                                task_exec_status, task_exec_count, task_data,
-                                                               retry_batch_no, task_exec_msg, biz_sequence_key,
+                                                               task_exec_msg, biz_sequence_key,
                                                                biz_sequence_priority,
                                                                biz_sequence_can_exec_second_time,
                                                                biz_sequence_prev_check)
         values (#{retryTaskNo}, #{bizKey}, #{taskPlanExecTime}, #{taskStartTime},
                 #{taskExecStatus}, #{taskExecCount}, #{taskData},
-                #{retryBatchNo}, #{taskExecMsg}, #{bizSequenceKey}, #{bizSequencePriority}
+                #{taskExecMsg}, #{bizSequenceKey}, #{bizSequencePriority}
                    , #{bizSequenceCanExecSecondTime}, #{bizSequencePrevCheck})
     </insert>
 
@@ -78,9 +77,6 @@
             <if test="taskData != null and taskData != ''">
                 task_data = #{taskData},
             </if>
-            <if test="retryBatchNo != null and retryBatchNo != ''">
-                retry_batch_no = #{retryBatchNo},
-            </if>
             <if test="taskExecMsg != null and taskExecMsg != '' ">
                 task_exec_msg = #{taskExecMsg},
             </if>
@@ -98,7 +94,6 @@
             task_exec_status    = #{taskExecStatus},
             task_exec_count     = #{taskExecCount},
             task_data           = #{taskData},
-            retry_batch_no      = #{retryBatchNo},
             task_exec_msg       = #{taskExecMsg},
             biz_sequence_key    = #{bizSequenceKey}
         where id = #{id}
@@ -128,15 +123,6 @@
         where retry_task_no = #{retryTaskNo}
     </update>
 
-    <update id="markRetryBatchNoByTaskNos">
-        update /* RetryTaskMapper-markRetryBatchNoByTaskNos */ ${tableName}
-        set retry_batch_no = #{retryBatchNo}
-        where retry_task_no in
-        <foreach collection="list" item="retryTaskNo" open="(" separator="," close=")">
-            #{retryTaskNo}
-        </foreach>
-    </update>
-
     <delete id="deleteByNo">
         delete
         from /* RetryTaskMapper-deleteByNo */ ${tableName}
@@ -161,10 +147,10 @@
         or
         (task_exec_status = 'EXECUTING' and task_start_time < #{timeOutStartTime})
     )
-    and (retry_batch_no is null or retry_batch_no < #{retryBatchNo})
+    and id>#{minId}
     and task_plan_exec_time <= now()
     ]]>
-        order by id
+        order by id asc
         limit #{pageSize}
     </select>
     <select id="selectPrevBizSequenceTask" resultMap="BaseResultMap">

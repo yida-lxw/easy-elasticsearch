@@ -87,18 +87,12 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
 
     @Override
     public List<RetryTaskDO> selectExecutableTask(Date timeOutStartTime, Integer maxRetryTimes, Integer pageSize,
-                                                  String retryBatchNo) {
-        return retryTaskMapper.selectExecutableTask(timeOutStartTime, maxRetryTimes, pageSize, retryBatchNo,
+                                                  Long minId) {
+        return retryTaskMapper.selectExecutableTask(timeOutStartTime, maxRetryTimes, pageSize, minId,
             retryTaskConfig.getTableName());
     }
 
-    @Override
-    public int markRetryBatchNoByTaskNos(List<String> retryTaskNos, String retryBatchNo) {
-        if (CollectionUtils.isEmpty(retryTaskNos) || StringUtils.isEmpty(retryBatchNo)) {
-            return 0;
-        }
-        return retryTaskMapper.markRetryBatchNoByTaskNos(retryTaskNos, retryBatchNo, retryTaskConfig.getTableName());
-    }
+
 
     @Override
     public int deleteByNo(String retryTaskNo) {
@@ -139,11 +133,13 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
         }
         String bizUniqueKey = taskDO.getBizSequenceKey();
         if (StringUtils.isBlank(bizUniqueKey)) {
+            //不需要保证执行顺序
             this.execTask(taskDO.getRetryTaskNo(), taskDO.getBizKey());
         } else {
             RLock lock = null;
             boolean lockSuccess = false;
             try {
+                //有顺序执行
                 lock = redissonClient.getLock(buildExecLockKey(bizUniqueKey));
                 lockSuccess = lock.tryLock(0L, 600 * 1000L, TimeUnit.MILLISECONDS);
                 if (lockSuccess) {
@@ -194,6 +190,10 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
             if (lockSuccess) {
                 taskDO = retryTaskMapper.selectByNo(taskNo, retryTaskConfig.getTableName());
                 if (taskDO != null) {
+                    if (RetryTaskStatusEnum.SUCCESS.name().equals(taskDO.getTaskExecStatus())) {
+                        log.info("重试任务-已经执行成功-本次放弃执行！task：{}", taskDO);
+                        return true;
+                    }
                     log.info("重试任务-开始执行，retry_task_no：{}", taskNo);
                     AssertUtils.isTrue(validatePrevBizSequenceTask(bizKey, taskDO), "上一优先级的任务未执行成功，本级业务不允许执行");
                     retryTaskMapper.updateExecutingStatusByNo(taskNo, RetryTaskStatusEnum.EXECUTING.name(),

@@ -70,11 +70,6 @@ public class RetryTaskDO implements Serializable {
     private String  taskData;
 
     /**
-     * 执行批次号
-     */
-    private String  retryBatchNo;
-
-    /**
      * 执行信息
      */
     private String  taskExecMsg;

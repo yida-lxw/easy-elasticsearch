@@ -45,7 +45,7 @@ public interface RetryTaskDomainService {
      * @return
      */
     List<RetryTaskDO> selectExecutableTask(Date timeOutStartTime, Integer maxRetryTimes, Integer pageSize,
-                                           String retryBatchNo);
+                                           Long minId);
 
     /**
      * 查询不可执行的重试任务列表
@@ -55,15 +55,6 @@ public interface RetryTaskDomainService {
      * @return
      */
     List<RetryTaskDO> selectUnexecutableTask(Integer maxRetryTimes, Integer pageSize);
-
-    /**
-     * 标记重试任务的retryBatchNo
-     * 每个重试任务的xxljob执行任务，会生成一个retryBatchNo，查询出可执行任务后，先进行标记，避免重复查询出任务
-     * @param retryTaskNos 重试任务编号列表
-     * @param retryBatchNo 定时任务生成的批次编号
-     * @return
-     */
-    int markRetryBatchNoByTaskNos(List<String> retryTaskNos, String retryBatchNo);
 
     /**
      * 根据任务编号删除重试任务

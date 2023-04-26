@@ -14,11 +14,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 @Slf4j
 public class RetryTaskJob {
@@ -29,6 +30,9 @@ public class RetryTaskJob {
     private RetryTaskDomainService supRetryTaskDomainService;
     @Resource
     private RetryTaskMapper        retryTaskMapper;
+    @Autowired
+    @Qualifier("retryTaskThreadPoolTaskExecutor")
+    private ThreadPoolExecutor     retryTaskThreadPoolTaskExecutor;
 
     @XxlJob("retryTaskExeJob")
     public ReturnT retryTaskExec(String paramStr) {
@@ -96,19 +100,29 @@ public class RetryTaskJob {
     }
 
     private void queryAndExecRetryTask() {
-        String retryBatchNo = String.valueOf(System.currentTimeMillis());
-        while (true) {
+        Long minId = Long.MIN_VALUE;
+        //一次调度超过10000次，中断，等待xxljob下次调度
+        int execCount = 10000;
+        int i = 0;
+        while (i++ < execCount) {
+            if (retryTaskThreadPoolTaskExecutor.getQueue().size() > retryTaskConfig.getQueuePoolSize() / 2) {
+                try {
+                    Thread.sleep(200L);
+                    continue;
+                } catch (InterruptedException e) {
+                    log.error("线程异常", e);
+                }
+            }
             List<RetryTaskDO> taskList = supRetryTaskDomainService.selectExecutableTask(
                 retryTaskConfig.getTimeOutStartTime(), retryTaskConfig.getRetryTaskMaxRetryTimes(),
-                retryTaskConfig.getRetryTaskPageSize(), retryBatchNo);
+                retryTaskConfig.getRetryTaskPageSize(), minId);
             if (CollectionUtils.isEmpty(taskList)) {
                 break;
             }
-            supRetryTaskDomainService.markRetryBatchNoByTaskNos(
-                taskList.stream().map(RetryTaskDO::getRetryTaskNo).collect(Collectors.toList()), retryBatchNo);
             for (RetryTaskDO task : taskList) {
                 supRetryTaskDomainService.asynExecTask(task.getRetryTaskNo());
             }
+            minId = taskList.get(taskList.size() - 1).getId();
         }
     }
 
