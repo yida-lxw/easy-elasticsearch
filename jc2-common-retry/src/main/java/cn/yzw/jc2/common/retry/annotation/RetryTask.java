@@ -6,6 +6,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * @Description: 重试任务注解，打了次注解的方法，会被重试任务执行
+ * @Author: lbl
+ * @Date: 2023/4/27
+ **/
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
