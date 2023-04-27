@@ -162,19 +162,11 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                     List<RetryTaskDO> retryTaskDOList = retryTaskMapper.selectExecTaskByBizSequenceNo(
                         retryTaskConfig.getTimeOutStartTime(), retryTaskConfig.getRetryTaskMaxRetryTimes(),
                         bizSequenceNo, retryTaskConfig.getTableName());
-                    List<String> noExecRetryTaskNoList = retryTaskDOList.stream().map(RetryTaskDO::getRetryTaskNo)
-                        .collect(Collectors.toList());
                     for (RetryTaskDO retryTaskDO : retryTaskDOList) {
                         boolean execSuccess = this.execTask(retryTaskDO.getRetryTaskNo(), retryTaskDO.getBizKey());
-                        noExecRetryTaskNoList.remove(retryTaskDO.getRetryTaskNo());
                         if (!execSuccess) {
                             break;
                         }
-                    }
-                    if (CollectionUtils.isNotEmpty(noExecRetryTaskNoList)) {
-                        retryTaskMapper.updateResultStatusByNoList(noExecRetryTaskNoList,
-                            RetryTaskStatusEnum.FAIL.name(), "相同bizSequenceNo的前置任务未执行或执行失败",
-                            retryTaskConfig.getTableName());
                     }
                 } else {
                     log.info("重试任务-跳过执行-未获取到执行锁，bizSequenceNo：{}", bizSequenceNo);
