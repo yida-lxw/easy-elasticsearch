@@ -9,7 +9,7 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>retry-spring-boot-starter</artifactId>
+    <artifactId>jc2-common-retry-starter</artifactId>
     <version>1.0.0</version>
 
     <properties>
