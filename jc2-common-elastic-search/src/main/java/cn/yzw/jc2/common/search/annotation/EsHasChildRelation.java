@@ -24,6 +24,11 @@ public @interface EsHasChildRelation {
     String type() default "";
 
     /**
+     * 是否返回inner hit
+     * @return
+     */
+    boolean returnInnerHits() default false;
+    /**
      * inner hit size
      * @return
      */
@@ -33,5 +38,5 @@ public @interface EsHasChildRelation {
      * inner name
      * @return
      */
-    String innerHitsName();
+    String innerHitsName() default "";
 }

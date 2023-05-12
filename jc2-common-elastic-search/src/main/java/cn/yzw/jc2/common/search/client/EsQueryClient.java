@@ -107,6 +107,7 @@ public class EsQueryClient {
 
         SearchAfterResult<O> pageResult = new SearchAfterResult<>();
         StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         try {
             SearchRequest searchRequest = EsQueryParse.convertSearchAfter2Query(request);
             SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -139,6 +140,7 @@ public class EsQueryClient {
     public <E, O> ScrollResult<O> scroll(ScrollRequest<E> request, Class<O> oclass) {
         ScrollResult<O> pageResult = new ScrollResult<>();
         StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         try {
             SearchResponse searchResponse;
             //第一次处理

@@ -21,8 +21,13 @@ public @interface EsHasParentRelation {
      * 父节点类型key
      * @return
      */
-    String parentType() default "";
+    String parentType();
 
+    /**
+     * 是否返回inner hit
+     * @return
+     */
+    boolean returnInnerHits() default false;
     /**
      * inner hit size
      * @return
@@ -33,5 +38,5 @@ public @interface EsHasParentRelation {
      * inner name
      * @return
      */
-    String innerHitsName();
+    String innerHitsName() default "";
 }
