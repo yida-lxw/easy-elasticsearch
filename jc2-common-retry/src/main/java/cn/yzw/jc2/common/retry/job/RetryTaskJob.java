@@ -81,21 +81,15 @@ public class RetryTaskJob {
         Long minId = null;
         int num = 0;
         Date date = DateUtils.addDays(new Date(), -1 * retryTaskConfig.getCleanBeforeDays());
-        while (true) {
-            //1.批量查询
-            List<Long> ids = retryTaskMapper.queryBatchForDel(500, minId, date, retryTaskConfig.getTableName());
+        List ids;
+        do {
+            ids = this.retryTaskMapper.queryBatchForDel(500, minId, date, this.retryTaskConfig.getTableName());
             if (CollectionUtils.isNotEmpty(ids)) {
-                retryTaskMapper.batchDeleteByPrimaryKey(ids, retryTaskConfig.getTableName());
-                //设置下批查询起始id
-                minId = ids.get(ids.size() - 1);
+                this.retryTaskMapper.batchDeleteByPrimaryKey(ids, this.retryTaskConfig.getTableName());
+                minId = (Long) ids.get(ids.size() - 1);
                 num += ids.size();
             }
-            if (CollectionUtils.isEmpty(ids) || ids.size() < 500) {
-                log.info("retryTaskCleanJob执行结束,minId={}", minId);
-                break;
-            }
-
-        }
+        } while (!CollectionUtils.isEmpty(ids) && ids.size() >= 500);
         return new ReturnT(ReturnT.SUCCESS_CODE, String.format("删除成功%d条数据", num));
     }
 
