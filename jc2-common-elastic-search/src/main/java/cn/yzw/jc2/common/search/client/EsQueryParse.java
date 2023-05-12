@@ -1,6 +1,8 @@
 package cn.yzw.jc2.common.search.client;
 
 import cn.yzw.infra.component.utils.JsonUtils;
+import cn.yzw.jc2.common.search.annotation.EsHasChildRelation;
+import cn.yzw.jc2.common.search.annotation.EsHasParentRelation;
 import cn.yzw.jc2.common.search.request.Order;
 import cn.yzw.jc2.common.search.request.ScrollRequest;
 import cn.yzw.jc2.common.search.request.SearchPageRequest;
@@ -11,7 +13,6 @@ import cn.yzw.jc2.common.search.annotation.EsNotEquals;
 import cn.yzw.jc2.common.search.annotation.EsNotLike;
 import cn.yzw.jc2.common.search.annotation.EsNotNull;
 import cn.yzw.jc2.common.search.annotation.EsRange;
-import cn.yzw.jc2.common.search.annotation.EsRelationQuery;
 import cn.yzw.jc2.common.search.annotation.EsLike;
 import cn.yzw.jc2.common.search.annotation.EsMulti;
 import cn.yzw.jc2.common.search.annotation.EsNested;
@@ -34,6 +35,7 @@ import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.WildcardQueryBuilder;
 import org.elasticsearch.join.query.HasChildQueryBuilder;
+import org.elasticsearch.join.query.HasParentQueryBuilder;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -263,6 +265,18 @@ public class EsQueryParse {
                             NestedQueryBuilder query = getNestedQuery(field, value);
                             boolQueryBuilder.filter(query);
                         }
+                        if (field.isAnnotationPresent(EsHasChildRelation.class)) {
+                            BoolQueryBuilder query = getHasChildQuery(field, value, nestedPath);
+                            if (Objects.nonNull(query)) {
+                                boolQueryBuilder.filter(query);
+                            }
+                        }
+                        if (field.isAnnotationPresent(EsHasParentRelation.class)) {
+                            BoolQueryBuilder query = getHasParentQuery(field, value, nestedPath);
+                            if (Objects.nonNull(query)) {
+                                boolQueryBuilder.filter(query);
+                            }
+                        }
                     }
                 } catch (Exception e) {
                     log.warn("ES查询解析异常1: ", e);
@@ -274,15 +288,26 @@ public class EsQueryParse {
         }
 
         BoolQueryBuilder boolQueryBuilderTop = null;
-        if (object != null && object.getClass().isAnnotationPresent(EsRelationQuery.class)) {
+        if (object != null && object.getClass().isAnnotationPresent(EsHasChildRelation.class)) {
             // 外面再包裹一层query
             boolQueryBuilderTop = QueryBuilders.boolQuery();
-            EsRelationQuery esRelationQuery = object.getClass().getAnnotation(EsRelationQuery.class);
+            EsHasChildRelation esRelationQuery = object.getClass().getAnnotation(EsHasChildRelation.class);
 
-            HasChildQueryBuilder childQueryBuilder = new HasChildQueryBuilder(esRelationQuery.childType(),
+            HasChildQueryBuilder childQueryBuilder = new HasChildQueryBuilder(esRelationQuery.type(),
                 boolQueryBuilder, ScoreMode.None);
-            InnerHitBuilder innerHitBuilder = new InnerHitBuilder();
+            InnerHitBuilder innerHitBuilder = new InnerHitBuilder(esRelationQuery.innerHitsName());
             innerHitBuilder.setSize(esRelationQuery.innerHitsSize());
+            childQueryBuilder.innerHit(innerHitBuilder);
+
+            boolQueryBuilderTop.filter(childQueryBuilder);
+        } else if (object != null && object.getClass().isAnnotationPresent(EsHasParentRelation.class)) {
+            // 外面再包裹一层query
+            boolQueryBuilderTop = QueryBuilders.boolQuery();
+            EsHasParentRelation relation = object.getClass().getAnnotation(EsHasParentRelation.class);
+            HasParentQueryBuilder childQueryBuilder = new HasParentQueryBuilder(relation.parentType(), boolQueryBuilder,
+                false);
+            InnerHitBuilder innerHitBuilder = new InnerHitBuilder(relation.innerHitsName());
+            innerHitBuilder.setSize(relation.innerHitsSize());
             childQueryBuilder.innerHit(innerHitBuilder);
 
             boolQueryBuilderTop.filter(childQueryBuilder);
@@ -292,6 +317,35 @@ public class EsQueryParse {
         return boolQueryBuilderTop;
     }
 
+    /**
+     * query -> bool -> filter -> bool -> must -> terms
+     * @param field
+     * @param object
+     * @param nestedPath
+     * @return
+     */
+    private static BoolQueryBuilder getHasParentQuery(Field field, Object object, String nestedPath) {
+        if (Objects.isNull(object)) {
+            return null;
+        }
+        BoolQueryBuilder boolQueryBuilder = getBoolQueryBuilder(object, nestedPath);
+        return boolQueryBuilder;
+    }
+
+    /**
+     * query -> bool -> filter -> bool -> must -> terms
+     * @param field
+     * @param object
+     * @param nestedPath
+     * @return
+     */
+    private static BoolQueryBuilder getHasChildQuery(Field field, Object object, String nestedPath) {
+        if (Objects.isNull(object)) {
+            return null;
+        }
+        BoolQueryBuilder boolQueryBuilder = getBoolQueryBuilder(object, nestedPath);
+        return boolQueryBuilder;
+    }
     private static QueryBuilder getInQuery(Field field, List<?> value, String nestedPath) {
         EsIn esIn = field.getAnnotation(EsIn.class);
 

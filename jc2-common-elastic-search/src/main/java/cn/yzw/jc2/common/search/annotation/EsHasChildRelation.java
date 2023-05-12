@@ -6,26 +6,32 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * ES 关系（父子）查询
+ * ES 关系（父子）查询,has_child
  *
  * @author: zhangzhibao
  * @version: 1.0.0
  * @date: 2022-11-28 20:00
  */
-@Target({ ElementType.TYPE })
+@Target({ ElementType.TYPE, ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface EsRelationQuery {
+public @interface EsHasChildRelation {
 
     /**
      * 
      * 子节点类型key
      * @return
      */
-    String childType() default "";
+    String type() default "";
 
     /**
      * inner hit size
      * @return
      */
     int innerHitsSize() default 100;
+
+    /**
+     * inner name
+     * @return
+     */
+    String innerHitsName();
 }
