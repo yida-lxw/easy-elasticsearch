@@ -171,7 +171,7 @@ public class EsQueryParse {
     private static void setSortFields(List<Order> orderList, SearchSourceBuilder sourceBuilder) {
         if (CollectionUtils.isEmpty(orderList)) {
             sourceBuilder.sort(SortBuilders.fieldSort("createTime").order(SortOrder.DESC));
-            sourceBuilder.sort(SortBuilders.fieldSort("_id").order(SortOrder.DESC));
+            sourceBuilder.sort(SortBuilders.fieldSort("id").order(SortOrder.DESC));
         } else {
             for (Order order : orderList) {
                 sourceBuilder.sort(String.valueOf(SortBuilders.fieldSort(order.getOrderByField())),

@@ -28,8 +28,8 @@ public class SearchBaseRequest<E> implements Serializable {
      */
     private String                   index;
     /**
-     * 排序字段推荐显示指定，避免使用到_id的字段排序
-     * 排序的字段列表,默认为creatTime+_id倒序
+     * 索引中推荐设置id字段，没有id字段，需要显示指定排序字段
+     * 排序的字段列表,默认为creatTime+id倒序
      */
     private List<Order>              orderByFieldList;
     /**
@@ -49,7 +49,6 @@ public class SearchBaseRequest<E> implements Serializable {
 
     /**
      * 是否不处理租户,默认处理租户
-     * 处理租户必须继承
      */
     private Boolean                  notDealTenant;
 }
