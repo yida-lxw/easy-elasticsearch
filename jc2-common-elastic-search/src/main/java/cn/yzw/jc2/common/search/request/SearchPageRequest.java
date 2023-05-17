@@ -3,6 +3,7 @@ package cn.yzw.jc2.common.search.request;
 import java.io.Serializable;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 /**
@@ -13,7 +14,7 @@ import lombok.experimental.SuperBuilder;
  * @Version 1.0
  */
 @Data
-@SuperBuilder
+@NoArgsConstructor
 public class SearchPageRequest<E> extends SearchBaseRequest<E> implements Serializable {
     private int     pageNum  = 1;
     private int     pageSize = 10;
@@ -23,4 +24,9 @@ public class SearchPageRequest<E> extends SearchBaseRequest<E> implements Serial
      */
     private Boolean sleep;
 
+    public SearchPageRequest(int pageNum, int pageSize, E param) {
+        this.pageNum = pageNum;
+        this.pageSize = pageSize;
+        super.setParam(param);
+    }
 }

@@ -13,7 +13,6 @@ import java.io.Serializable;
  * @Version 1.0
  */
 @Data
-@SuperBuilder
 public class ScrollRequest<E> extends SearchBaseRequest<E> implements Serializable {
 
     /**

@@ -14,7 +14,6 @@ import java.util.function.Supplier;
  * @Date: 2023/4/6
  **/
 @Data
-@Builder
 public class SearchBaseRequest<E> implements Serializable {
     /**
      * 租户ID
