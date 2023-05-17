@@ -1,6 +1,7 @@
 package cn.yzw.jc2.common.search.request;
 
 import lombok.Data;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 
@@ -12,6 +13,7 @@ import java.io.Serializable;
  * @Version 1.0
  */
 @Data
+@SuperBuilder
 public class ScrollRequest<E> extends SearchBaseRequest<E> implements Serializable {
 
     /**

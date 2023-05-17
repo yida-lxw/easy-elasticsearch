@@ -1,6 +1,7 @@
 package cn.yzw.jc2.common.search.request;
 
 import lombok.Data;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.List;
  * @Version 1.0
  */
 @Data
+@SuperBuilder
 public class SearchAfterRequest<E> extends SearchBaseRequest<E> implements Serializable {
     /**
      * 每页大小

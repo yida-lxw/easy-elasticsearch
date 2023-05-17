@@ -1,5 +1,6 @@
 package cn.yzw.jc2.common.search.request;
 
+import lombok.Builder;
 import lombok.Data;
 import org.elasticsearch.index.query.QueryBuilder;
 
@@ -13,6 +14,7 @@ import java.util.function.Supplier;
  * @Date: 2023/4/6
  **/
 @Data
+@Builder
 public class SearchBaseRequest<E> implements Serializable {
     /**
      * 租户ID
