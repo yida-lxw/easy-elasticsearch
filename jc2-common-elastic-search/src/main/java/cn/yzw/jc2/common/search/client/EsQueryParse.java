@@ -266,13 +266,15 @@ public class EsQueryParse {
                             boolQueryBuilder.filter(query);
                         }
                         if (field.isAnnotationPresent(EsHasChildRelation.class)) {
-                            QueryBuilder builder = getBoolQueryBuilder(field, nestedPath);
+                            field.setAccessible(true);
+                            QueryBuilder builder = getBoolQueryBuilder(field.get(object), nestedPath);
                             HasChildQueryBuilder childQueryBuilder = getHasChildQueryBuilder(
                                 field.getAnnotation(EsHasChildRelation.class), builder);
                             boolQueryBuilder.filter(childQueryBuilder);
                         }
                         if (field.isAnnotationPresent(EsHasParentRelation.class)) {
-                            QueryBuilder builder = getBoolQueryBuilder(field, nestedPath);
+                            field.setAccessible(true);
+                            QueryBuilder builder = getBoolQueryBuilder(field.get(object), nestedPath);
                             EsHasParentRelation relation = field.getAnnotation(EsHasParentRelation.class);
                             HasParentQueryBuilder childQueryBuilder = getHasParentQueryBuilder(builder, relation);
                             boolQueryBuilder.filter(childQueryBuilder);
