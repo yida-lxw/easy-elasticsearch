@@ -1,7 +1,7 @@
 package cn.yzw.jc2.common.search.request;
 
 import lombok.Data;
-import lombok.experimental.SuperBuilder;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.List;
@@ -14,6 +14,7 @@ import java.util.List;
  * @Version 1.0
  */
 @Data
+@NoArgsConstructor
 public class SearchAfterRequest<E> extends SearchBaseRequest<E> implements Serializable {
     /**
      * 每页大小
@@ -24,4 +25,9 @@ public class SearchAfterRequest<E> extends SearchBaseRequest<E> implements Seria
      */
     private List<Object> searchAfterList;
 
+    public SearchAfterRequest(int pageSize, List<Object> searchAfterList, E param) {
+        this.pageSize = pageSize;
+        this.searchAfterList = searchAfterList;
+        super.setParam(param);
+    }
 }
