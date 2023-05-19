@@ -174,8 +174,7 @@ public class EsQueryParse {
             sourceBuilder.sort(SortBuilders.fieldSort("id").order(SortOrder.DESC));
         } else {
             for (Order order : orderList) {
-                sourceBuilder.sort(String.valueOf(SortBuilders.fieldSort(order.getOrderByField())),
-                    SortOrder.fromString(order.getOrderType()));
+                sourceBuilder.sort(order.getOrderByField(), SortOrder.fromString(order.getOrderType()));
             }
         }
     }
