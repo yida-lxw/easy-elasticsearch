@@ -1,6 +1,7 @@
 package cn.yzw.jc2.common.controller;
 
 import cn.yzw.jc2.common.search.annotation.EsEquals;
+import cn.yzw.jc2.common.search.annotation.EsHasParentRelation;
 import cn.yzw.jc2.common.search.annotation.EsLike;
 import cn.yzw.jc2.common.search.annotation.EsMulti;
 import cn.yzw.jc2.common.search.annotation.EsRange;
@@ -17,6 +18,7 @@ import java.util.List;
  * @date: 2022-08-11 20:24
  */
 @Data
+@EsHasParentRelation(parentType = "product")
 public class EsBaseQuery implements Serializable {
 
     /**
@@ -68,4 +70,5 @@ public class EsBaseQuery implements Serializable {
     private Long                  createTimeEnd;
 
 
+    private EsOrgMultiQuery       esOrgMultiQuery;
 }

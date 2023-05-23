@@ -22,6 +22,10 @@ public class TestController {
         EsBaseQuery query = new EsBaseQuery();
         request.setTenantId("cscec");
         query.setId("cscec_228048");
+        EsOrgMultiQuery orgMultiQuery=new EsOrgMultiQuery();
+        orgMultiQuery.setOrgCode("10001");
+        orgMultiQuery.setOrgCodeContainSub("1000010001");
+        query.setEsOrgMultiQuery(orgMultiQuery);
         request.setParam(query);
         //        query.setCreateName("呵呵");
         request.setPageSize(2);
