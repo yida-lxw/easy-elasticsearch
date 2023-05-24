@@ -102,6 +102,28 @@ public class EsQueryParse {
         return searchRequest;
     }
 
+    public static SearchRequest convert2AggQuery(String index, Object param, Supplier<QueryBuilder>... customQueries) {
+        SearchRequest searchRequest = new SearchRequest(index);
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        BoolQueryBuilder boolQueryBuilder = getBoolQueryBuilder(param);
+
+        if (customQueries != null) {
+            for (Supplier<QueryBuilder> customQuery : customQueries) {
+                if (customQuery != null) {
+                    boolQueryBuilder.filter(customQuery.get());
+                }
+            }
+        }
+        // 设置分页
+        sourceBuilder.from(0);
+        sourceBuilder.size(0);
+        // 查询逻辑
+        sourceBuilder.query(boolQueryBuilder);
+        log.info("es query string agg: GET {}/_search \n {}", index,
+            JsonUtils.writeAsJson(JsonUtils.readAsMap(sourceBuilder.toString())));
+        searchRequest.source(sourceBuilder);
+        return searchRequest;
+    }
     public static <E> SearchRequest convertScroll2Query(ScrollRequest<E> scrollRequest) {
 
         //构建查询
