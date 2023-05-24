@@ -404,8 +404,8 @@ public class EsQueryParse {
 
     private static BoolQueryBuilder getNotEqualsQuery(Field field, Object value, String nestedPath) {
         String likeValue = (String) value;
-        EsEquals esNotLike = field.getAnnotation(EsEquals.class);
-        String filedName = getFiledName(field, esNotLike.name(), nestedPath);
+        EsNotEquals esNotEquals = field.getAnnotation(EsNotEquals.class);
+        String filedName = getFiledName(field, esNotEquals.name(), nestedPath);
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
         return boolQueryBuilder.mustNot(QueryBuilders.termQuery(filedName, likeValue));
     }
