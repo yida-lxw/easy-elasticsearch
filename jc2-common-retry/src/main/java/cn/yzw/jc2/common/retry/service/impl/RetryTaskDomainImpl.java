@@ -226,7 +226,8 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                 msg = msg.substring(0, 500);
             }
             if (taskDO != null) {
-                retryTaskMapper.updateResultStatusByNo(taskNo, RetryTaskStatusEnum.FAIL.name(), msg,
+                retryTaskMapper.updateResultStatusByNo(taskNo, RetryTaskStatusEnum.FAIL.name(),
+                    StringUtils.isBlank(msg) ? "空指针了！！！" : msg,
                     retryTaskConfig.getTableName());
             }
             return false;
