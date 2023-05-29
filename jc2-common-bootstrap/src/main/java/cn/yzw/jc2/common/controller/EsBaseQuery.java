@@ -18,7 +18,6 @@ import java.util.List;
  * @date: 2022-08-11 20:24
  */
 @Data
-@EsHasParentRelation(parentType = "product")
 public class EsBaseQuery implements Serializable {
 
     /**
