@@ -16,7 +16,7 @@ import java.util.Date;
 public class RetryCreateTask implements Serializable {
 
     /**
-     * 重试任务唯一编号，需要接入方使用分布式id生成器生成
+     * 重试任务唯一编号，是唯一索引，建议使用分布式id生成器生成
      */
     @NotBlank
     private String  retryTaskNo;
