@@ -139,6 +139,14 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
         return retryTaskMapper.selectByNo(retryTaskNo, retryTaskConfig.getTableName());
     }
 
+    @Override
+    public List<RetryTaskDO> batchQueryByTaskNos(List<String> retryTaskNos) {
+        if (CollectionUtils.isEmpty(retryTaskNos)) {
+            return null;
+        }
+        return retryTaskMapper.batchQueryByTaskNos(retryTaskNos, retryTaskConfig.getTableName());
+    }
+
     private void execTask(String taskNo) {
         if (StringUtils.isBlank(taskNo)) {
             return;

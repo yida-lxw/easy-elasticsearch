@@ -82,4 +82,11 @@ public interface RetryTaskDomainService {
      * @return
      */
     int resetByNo(String retryTaskNo);
+
+    /**
+     * 根据任务编号批量查询重试任务
+     * @param retryTaskNos 任务编号
+     * @return
+     */
+    List<RetryTaskDO> batchQueryByTaskNos(List<String> retryTaskNos);
 }

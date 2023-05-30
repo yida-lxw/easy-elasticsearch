@@ -60,4 +60,6 @@ public interface RetryTaskMapper {
                                 @Param("tableName") String tableName);
 
     int batchDeleteByPrimaryKey(@Param("ids") List<Long> ids, @Param("tableName") String tableName);
+
+    List<RetryTaskDO> batchQueryByTaskNos(@Param("retryTaskNos") List<String> retryTaskNos, @Param("tableName") String tableName);
 }

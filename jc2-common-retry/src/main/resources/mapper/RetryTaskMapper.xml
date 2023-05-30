@@ -224,6 +224,15 @@
         order by id asc
         limit #{limit}
     </select>
+    <select id="batchQueryByTaskNos" resultMap="BaseResultMap">
+        select /* RetryTaskMapper-batchQueryByTaskNos */
+        <include refid="Base_Column_List"/>
+        from ${tableName}
+        where retry_task_no in
+        <foreach collection="retryTaskNos" item="retryTaskNo" open="(" separator="," close=")">
+            #{retryTaskNo}
+        </foreach>
+    </select>
     <delete id="batchDeleteByPrimaryKey">
         delete
         from ${tableName}
