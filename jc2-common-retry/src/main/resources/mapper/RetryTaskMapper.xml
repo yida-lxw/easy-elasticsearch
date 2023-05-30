@@ -117,8 +117,14 @@
     </update>
     <update id="updateResultStatusByNo">
         update /* RetryTaskMapper-updateResultStatusByNo */ ${tableName}
-        set task_exec_status = #{taskExecStatus},
-            task_exec_msg    = #{taskExecMsg}
+        <set>
+            <if test="taskExecStatus != null and taskExecStatus != ''">
+                task_exec_status = #{taskExecStatus,jdbcType=VARCHAR},
+            </if>
+            <if test="taskExecMsg != null and taskExecMsg != ''">
+                task_exec_msg = #{taskExecMsg,jdbcType=VARCHAR},
+            </if>
+        </set>
         where retry_task_no = #{retryTaskNo}
     </update>
 

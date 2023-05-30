@@ -207,7 +207,7 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                     retryTaskMapper.updateExecutingStatusByNo(taskNo, RetryTaskStatusEnum.EXECUTING.name(),
                         retryTaskConfig.getTableName());
                     methodHolder.getBizMethod().invoke(methodHolder.getTargetService(), taskDO.getTaskData());
-                    retryTaskMapper.updateExecutingStatusByNo(taskNo, RetryTaskStatusEnum.SUCCESS.name(),
+                    retryTaskMapper.updateResultStatusByNo(taskNo, RetryTaskStatusEnum.SUCCESS.name(), null,
                         retryTaskConfig.getTableName());
                     log.info("重试任务-成功-执行完成任务！task：{}", taskDO);
                 }
