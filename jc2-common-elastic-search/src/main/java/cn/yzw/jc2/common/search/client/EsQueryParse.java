@@ -3,6 +3,8 @@ package cn.yzw.jc2.common.search.client;
 import cn.yzw.infra.component.utils.JsonUtils;
 import cn.yzw.jc2.common.search.annotation.EsHasChildRelation;
 import cn.yzw.jc2.common.search.annotation.EsHasParentRelation;
+import cn.yzw.jc2.common.search.annotation.EsMatch;
+import cn.yzw.jc2.common.search.annotation.EsMatchPhrase;
 import cn.yzw.jc2.common.search.request.Order;
 import cn.yzw.jc2.common.search.request.ScrollRequest;
 import cn.yzw.jc2.common.search.request.SearchPageRequest;
@@ -28,6 +30,8 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.InnerHitBuilder;
+import org.elasticsearch.index.query.MatchPhraseQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -278,6 +282,14 @@ public class EsQueryParse {
                             ExistsQueryBuilder query = getNotNullQuery(field, nestedPath);
                             boolQueryBuilder.filter(query);
                         }
+                        if (field.isAnnotationPresent(EsMatchPhrase.class)) {
+                            MatchPhraseQueryBuilder matchPhrase = getMatchPhrase(field, value, nestedPath);
+                            boolQueryBuilder.filter(matchPhrase);
+                        }
+                        if (field.isAnnotationPresent(EsMatch.class)) {
+                            MatchQueryBuilder match = getMatch(field, value, nestedPath);
+                            boolQueryBuilder.filter(match);
+                        }
                         if (field.isAnnotationPresent(EsNotNullFields.class)) {
                             List<ExistsQueryBuilder> query = getNotNullQuery((List<String>) value, nestedPath);
                             Optional.ofNullable(query).orElse(new ArrayList<>()).forEach(boolQueryBuilder::filter);
@@ -410,6 +422,19 @@ public class EsQueryParse {
         return boolQueryBuilder.mustNot(QueryBuilders.termQuery(filedName, likeValue));
     }
 
+    private static MatchQueryBuilder getMatch(Field field, Object value, String nestedPath) {
+        EsMatch esMatchPhrase = field.getAnnotation(EsMatch.class);
+        String filedName = getFiledName(field, esMatchPhrase.name(), nestedPath);
+
+        return QueryBuilders.matchQuery(filedName, value);
+    }
+
+    private static MatchPhraseQueryBuilder getMatchPhrase(Field field, Object value, String nestedPath) {
+        EsMatchPhrase esMatchPhrase = field.getAnnotation(EsMatchPhrase.class);
+        String filedName = getFiledName(field, esMatchPhrase.name(), nestedPath);
+
+        return QueryBuilders.matchPhraseQuery(filedName, value);
+    }
     private static WildcardQueryBuilder getLikeQuery(Field field, Object value, String nestedPath) {
         String likeValue = (String) value;
         EsLike esLike = field.getAnnotation(EsLike.class);
