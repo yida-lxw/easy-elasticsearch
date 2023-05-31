@@ -92,10 +92,11 @@ public class RetryTaskJob {
 
     private void queryAndExecRetryTask() {
         Long minId = Long.MIN_VALUE;
-        //一次调度超过10000次，中断，等待xxljob下次调度
-        int execCount = 10000;
+        //一次调度超过1000次，中断，等待xxljob下次调度
+        int execCount = 1000;
         int i = 0;
         while (i++ < execCount) {
+            //待执行任务过多的时候，降低拉取频率
             if (retryTaskThreadPoolTaskExecutor.getQueue().size() > retryTaskConfig.getQueuePoolSize() / 2) {
                 try {
                     Thread.sleep(200L);
