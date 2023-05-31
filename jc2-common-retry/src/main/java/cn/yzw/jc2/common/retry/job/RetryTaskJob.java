@@ -37,7 +37,6 @@ public class RetryTaskJob {
     @XxlJob("retryTaskExeJob")
     public ReturnT retryTaskExec(String paramStr) {
         try {
-            LogUtil.setNewTraceIdFromJob();
             Param param = null;
             if (StringUtils.isNotBlank(paramStr)) {
                 param = JsonUtils.readAsObject(paramStr, Param.class);
@@ -65,8 +64,6 @@ public class RetryTaskJob {
         } catch (Exception e) {
             log.error("重试任务-重试任务JOB-执行异常", e);
             return ReturnT.FAIL;
-        } finally {
-            LogUtil.removeTraceID();
         }
     }
 

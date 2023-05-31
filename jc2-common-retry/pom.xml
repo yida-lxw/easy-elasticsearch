@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>jc2-common-retry-starter</artifactId>
-    <version>1.0.0.20230530</version>
+    <version>1.0.20230531</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
