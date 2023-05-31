@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationContextAware,
                                  SmartInitializingSingleton {
     private final static String retry_task_EXEC_LOCK_PREFIX = "retry_task_exec_lock_";
-
+    private final ConcurrentMap<String, RetryTaskBizMethodHolder> bizMethodRegistry           = new ConcurrentHashMap<>();
     @Resource
     private RetryTaskMapper     retryTaskMapper;
 
@@ -93,11 +93,13 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
 
     @Override
     public void syncExecTask(String taskNo) {
+        AssertUtils.notBlank(taskNo, "任务id不能为空！！！");
         this.execTask(taskNo);
     }
 
     @Override
     public void asynExecTask(String taskNo) {
+        AssertUtils.notBlank(taskNo, "任务id不能为空！！！");
         retryTaskThreadPoolTaskExecutor.execute(() -> this.execTask(taskNo));
     }
 
@@ -193,14 +195,15 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
         if (StringUtils.isBlank(taskNo) || StringUtils.isBlank(bizKey)) {
             return false;
         }
+        if (!bizMethodRegistry.containsKey(bizKey)) {
+            log.info("未找到bizKey对应的业务执行方法,bizKey={},retry_task_no={}", bizKey, taskNo);
+            return false;
+        }
         RLock lock = null;
         boolean lockSuccess = false;
         RetryTaskDO taskDO = null;
         try {
             RetryTaskBizMethodHolder methodHolder = bizMethodRegistry.get(bizKey);
-            if (methodHolder == null) {
-                throw new RuntimeException("未找到bizKey对应的业务方法,key=" + bizKey);
-            }
             lock = redissonClient.getLock(buildExecLockKey(taskNo));
             lockSuccess = lock.tryLock(0L, methodHolder.getLockSeconds() * 1000L, TimeUnit.MILLISECONDS);
             if (lockSuccess) {
@@ -281,7 +284,7 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
         initBizMethodRegistry(this.applicationContext);
     }
 
-    private final ConcurrentMap<String, RetryTaskBizMethodHolder> bizMethodRegistry = new ConcurrentHashMap<>();
+
 
     private void initBizMethodRegistry(ApplicationContext applicationContext) {
         if (applicationContext == null) {
