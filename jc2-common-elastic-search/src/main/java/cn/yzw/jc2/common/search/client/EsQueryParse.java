@@ -1,5 +1,6 @@
 package cn.yzw.jc2.common.search.client;
 
+import cn.yzw.infra.component.utils.AssertUtils;
 import cn.yzw.infra.component.utils.JsonUtils;
 import cn.yzw.jc2.common.search.annotation.EsHasChildRelation;
 import cn.yzw.jc2.common.search.annotation.EsHasParentRelation;
@@ -250,10 +251,14 @@ public class EsQueryParse {
                         boolQueryBuilder.filter(bool);
                     } else {
                         if (field.isAnnotationPresent(EsLike.class)) {
+                            String val = (String) value;
+                            AssertUtils.isTrue(val.length() < 51, "请缩小检索字段的长度!");
                             WildcardQueryBuilder query = getLikeQuery(field, value, nestedPath);
                             boolQueryBuilder.filter(query);
                         }
                         if (field.isAnnotationPresent(EsNotLike.class)) {
+                            String val = (String) value;
+                            AssertUtils.isTrue(val.length() < 51, "请缩小检索字段的长度!");
                             BoolQueryBuilder query = getNotLikeQuery(field, value, nestedPath);
                             boolQueryBuilder.filter(query);
                         }
