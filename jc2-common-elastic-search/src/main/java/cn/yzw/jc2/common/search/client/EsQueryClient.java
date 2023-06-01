@@ -49,6 +49,8 @@ public class EsQueryClient {
 
     @Value("${es.query.max-size:10000}")
     private Integer             esQueryMaxSize;
+    @Value("${es.query.like.max-size:50}")
+    protected Integer           esQueryLikeMaxSize;
 
     @Autowired
     private RestHighLevelClient restHighLevelClient;

@@ -1,7 +1,7 @@
 package cn.yzw.jc2.common.search.client;
 
-import cn.yzw.infra.component.utils.AssertUtils;
 import cn.yzw.infra.component.utils.JsonUtils;
+import cn.yzw.infra.component.utils.SpringContextUtils;
 import cn.yzw.jc2.common.search.annotation.EsHasChildRelation;
 import cn.yzw.jc2.common.search.annotation.EsHasParentRelation;
 import cn.yzw.jc2.common.search.annotation.EsMatch;
@@ -45,6 +45,7 @@ import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.springframework.util.Assert;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -80,7 +81,7 @@ public class EsQueryParse {
             sourceBuilder.trackTotalHits(true);
         }
         log.info("es query string: GET {}/_search \n {}", request.getIndex(),
-            JsonUtils.writeAsJson(JsonUtils.readAsMap(sourceBuilder.toString())));
+                JsonUtils.writeAsJson(JsonUtils.readAsMap(sourceBuilder.toString())));
 
         SearchRequest searchRequest = new SearchRequest(request.getIndex());
         searchRequest.source(sourceBuilder);
@@ -100,7 +101,7 @@ public class EsQueryParse {
         }
 
         log.info("es query string: GET {}/_search \n {}", searchAfterRequest.getIndex(),
-            JsonUtils.writeAsJson(JsonUtils.readAsMap(sourceBuilder.toString())));
+                JsonUtils.writeAsJson(JsonUtils.readAsMap(sourceBuilder.toString())));
 
         SearchRequest searchRequest = new SearchRequest(searchAfterRequest.getIndex());
         searchRequest.source(sourceBuilder);
@@ -125,7 +126,7 @@ public class EsQueryParse {
         // 查询逻辑
         sourceBuilder.query(boolQueryBuilder);
         log.info("es query string agg: GET {}/_search \n {}", index,
-            JsonUtils.writeAsJson(JsonUtils.readAsMap(sourceBuilder.toString())));
+                JsonUtils.writeAsJson(JsonUtils.readAsMap(sourceBuilder.toString())));
         searchRequest.source(sourceBuilder);
         return searchRequest;
     }
@@ -141,7 +142,7 @@ public class EsQueryParse {
         Scroll scroll = new Scroll(TimeValue.timeValueMinutes(scrollRequest.getKeepAliveTimeMinute()));
         searchRequest.scroll(scroll);
         log.info("es query string: GET {}/_search \n {}", scrollRequest.getIndex(),
-            JsonUtils.writeAsJson(JsonUtils.readAsMap(sourceBuilder.toString())));
+                JsonUtils.writeAsJson(JsonUtils.readAsMap(sourceBuilder.toString())));
 
         return searchRequest;
     }
@@ -149,10 +150,10 @@ public class EsQueryParse {
     protected static <T> SearchSourceBuilder buildBoolQueryBuilder(SearchBaseRequest<T> requestParam) {
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         BoolQueryBuilder boolQueryBuilder = buildBoolQueryBuilder(requestParam.getParam(), sourceBuilder,
-            requestParam.getCustomQueries());
+                requestParam.getCustomQueries());
         //增加租户处理
         if (!Boolean.TRUE.equals(requestParam.getNotDealTenant())
-            && StringUtils.isNotBlank(requestParam.getTenantId())) {
+                && StringUtils.isNotBlank(requestParam.getTenantId())) {
             TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("tenantId", requestParam.getTenantId());
             boolQueryBuilder.filter(termQueryBuilder);
         }
@@ -161,10 +162,10 @@ public class EsQueryParse {
         List<String> sourceIncludeFields = requestParam.getSourceIncludeFields();
         List<String> sourceExcludeFields = requestParam.getSourceExcludeFields();
         sourceBuilder.fetchSource(
-            CollectionUtils.isEmpty(sourceIncludeFields) ? null
-                : sourceIncludeFields.toArray(new String[sourceIncludeFields.size()]),
-            CollectionUtils.isEmpty(sourceExcludeFields) ? null
-                : sourceExcludeFields.toArray(new String[sourceExcludeFields.size()]));
+                CollectionUtils.isEmpty(sourceIncludeFields) ? null
+                        : sourceIncludeFields.toArray(new String[sourceIncludeFields.size()]),
+                CollectionUtils.isEmpty(sourceExcludeFields) ? null
+                        : sourceExcludeFields.toArray(new String[sourceExcludeFields.size()]));
         // 默认排序字段
         setSortFields(requestParam.getOrderByFieldList(), sourceBuilder);
         return sourceBuilder;
@@ -227,7 +228,7 @@ public class EsQueryParse {
                     continue;
                 }
                 Object value = ClassUtils.getPublicMethod(object.getClass(), "get" + captureName(field.getName()))
-                    .invoke(object);
+                        .invoke(object);
 
                 if (value == null || field.getType() == String.class && StringUtils.isBlank((String) value)) {
                     continue;
@@ -252,13 +253,15 @@ public class EsQueryParse {
                     } else {
                         if (field.isAnnotationPresent(EsLike.class)) {
                             String val = (String) value;
-                            AssertUtils.isTrue(val.length() < 51, "请缩小检索字段的长度!");
+                            EsQueryClient queryClient = SpringContextUtils.getBean(EsQueryClient.class);
+                            Assert.isTrue(val.length() < queryClient.esQueryLikeMaxSize, "请缩小检索字段的长度!");
                             WildcardQueryBuilder query = getLikeQuery(field, value, nestedPath);
                             boolQueryBuilder.filter(query);
                         }
                         if (field.isAnnotationPresent(EsNotLike.class)) {
                             String val = (String) value;
-                            AssertUtils.isTrue(val.length() < 51, "请缩小检索字段的长度!");
+                            EsQueryClient queryClient = SpringContextUtils.getBean(EsQueryClient.class);
+                            Assert.isTrue(val.length() < queryClient.esQueryLikeMaxSize, "请缩小检索字段的长度!");
                             BoolQueryBuilder query = getNotLikeQuery(field, value, nestedPath);
                             boolQueryBuilder.filter(query);
                         }
@@ -307,7 +310,7 @@ public class EsQueryParse {
                             field.setAccessible(true);
                             QueryBuilder builder = getBoolQueryBuilder(field.get(object), nestedPath);
                             HasChildQueryBuilder childQueryBuilder = getHasChildQueryBuilder(
-                                field.getAnnotation(EsHasChildRelation.class), builder);
+                                    field.getAnnotation(EsHasChildRelation.class), builder);
                             boolQueryBuilder.filter(childQueryBuilder);
                         }
                         if (field.isAnnotationPresent(EsHasParentRelation.class)) {
@@ -333,7 +336,7 @@ public class EsQueryParse {
             // 外面再包裹一层query
             boolQueryBuilderTop = QueryBuilders.boolQuery();
             HasChildQueryBuilder hashChildQuery = getHasChildQueryBuilder(
-                object.getClass().getAnnotation(EsHasChildRelation.class), boolQueryBuilder);
+                    object.getClass().getAnnotation(EsHasChildRelation.class), boolQueryBuilder);
             boolQueryBuilderTop.filter(hashChildQuery);
         } else if (object != null && object.getClass().isAnnotationPresent(EsHasParentRelation.class)) {
             // 外面再包裹一层query
@@ -352,8 +355,8 @@ public class EsQueryParse {
         HasParentQueryBuilder childQueryBuilder = new HasParentQueryBuilder(relation.parentType(), builder, false);
         if (relation.returnInnerHits()) {
             InnerHitBuilder innerHitBuilder = StringUtils.isNotBlank(relation.innerHitsName())
-                ? new InnerHitBuilder(relation.innerHitsName())
-                : new InnerHitBuilder();
+                    ? new InnerHitBuilder(relation.innerHitsName())
+                    : new InnerHitBuilder();
             innerHitBuilder.setSize(relation.innerHitsSize());
             childQueryBuilder.innerHit(innerHitBuilder);
         }
@@ -365,8 +368,8 @@ public class EsQueryParse {
         HasChildQueryBuilder childQueryBuilder = new HasChildQueryBuilder(relation.type(), builder, ScoreMode.None);
         if (relation.returnInnerHits()) {
             InnerHitBuilder innerHitBuilder = StringUtils.isNotBlank(relation.innerHitsName())
-                ? new InnerHitBuilder(relation.innerHitsName())
-                : new InnerHitBuilder();
+                    ? new InnerHitBuilder(relation.innerHitsName())
+                    : new InnerHitBuilder();
             innerHitBuilder.setSize(relation.innerHitsSize());
             childQueryBuilder.innerHit(innerHitBuilder);
         }
@@ -378,7 +381,7 @@ public class EsQueryParse {
 
         String filedName = getFiledName(field, esIn.name(), nestedPath);
         List<?> _value = CollectionUtils.isEmpty(value) ? new ArrayList<>()
-            : value.stream().filter(Objects::nonNull).collect(Collectors.toList());
+                : value.stream().filter(Objects::nonNull).collect(Collectors.toList());
         if (!esIn.leftLike() && !esIn.rightLike()) {
             //单纯的in
             return QueryBuilders.termsQuery(filedName, _value);
@@ -478,7 +481,7 @@ public class EsQueryParse {
             return new ArrayList<>();
         }
         return value.stream().map(item -> getFiledName(item, nestedPath)).map(QueryBuilders::existsQuery)
-            .collect(Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     private static NestedQueryBuilder getNestedQuery(Field field, Object object) {
