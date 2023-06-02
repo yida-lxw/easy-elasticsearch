@@ -254,15 +254,21 @@ public class EsQueryParse {
                         if (field.isAnnotationPresent(EsLike.class)) {
                             String val = (String) value;
                             EsQueryClient queryClient = SpringContextUtils.getBean(EsQueryClient.class);
-                            Assert.isTrue(val.length() < queryClient.esQueryLikeMaxSize, "请缩小检索字段的长度!");
-                            WildcardQueryBuilder query = getLikeQuery(field, value, nestedPath);
+                            if (val.length() > queryClient.esQueryLikeMaxSize) {
+                                log.info("检索字段太长了，我截取了哈^_^");
+                                val = ((String) value).substring(0, queryClient.esQueryLikeMaxSize);
+                            }
+                            WildcardQueryBuilder query = getLikeQuery(field, val, nestedPath);
                             boolQueryBuilder.filter(query);
                         }
                         if (field.isAnnotationPresent(EsNotLike.class)) {
                             String val = (String) value;
                             EsQueryClient queryClient = SpringContextUtils.getBean(EsQueryClient.class);
-                            Assert.isTrue(val.length() < queryClient.esQueryLikeMaxSize, "请缩小检索字段的长度!");
-                            BoolQueryBuilder query = getNotLikeQuery(field, value, nestedPath);
+                            if (val.length() > queryClient.esQueryLikeMaxSize) {
+                                log.info("检索字段太长了，我截取了哈^_^");
+                                val = ((String) value).substring(0, queryClient.esQueryLikeMaxSize);
+                            }
+                            BoolQueryBuilder query = getNotLikeQuery(field, val, nestedPath);
                             boolQueryBuilder.filter(query);
                         }
                         if (field.isAnnotationPresent(EsEquals.class)) {
