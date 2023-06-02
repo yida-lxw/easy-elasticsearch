@@ -252,22 +252,12 @@ public class EsQueryParse {
                         boolQueryBuilder.filter(bool);
                     } else {
                         if (field.isAnnotationPresent(EsLike.class)) {
-                            String val = (String) value;
-                            EsQueryClient queryClient = SpringContextUtils.getBean(EsQueryClient.class);
-                            if (val.length() > queryClient.esQueryLikeMaxSize) {
-                                log.info("检索字段太长了，我截取了哈^_^");
-                                val = ((String) value).substring(0, queryClient.esQueryLikeMaxSize);
-                            }
+                            String val = wildcardOptimize((String) value);
                             WildcardQueryBuilder query = getLikeQuery(field, val, nestedPath);
                             boolQueryBuilder.filter(query);
                         }
                         if (field.isAnnotationPresent(EsNotLike.class)) {
-                            String val = (String) value;
-                            EsQueryClient queryClient = SpringContextUtils.getBean(EsQueryClient.class);
-                            if (val.length() > queryClient.esQueryLikeMaxSize) {
-                                log.info("检索字段太长了，我截取了哈^_^");
-                                val = ((String) value).substring(0, queryClient.esQueryLikeMaxSize);
-                            }
+                            String val = wildcardOptimize((String) value);
                             BoolQueryBuilder query = getNotLikeQuery(field, val, nestedPath);
                             boolQueryBuilder.filter(query);
                         }
@@ -355,6 +345,27 @@ public class EsQueryParse {
             boolQueryBuilderTop = boolQueryBuilder;
         }
         return boolQueryBuilderTop;
+    }
+
+    private static String wildcardOptimize(String value) {
+        String val = value;
+        EsQueryClient queryClient = SpringContextUtils.getBean(EsQueryClient.class);
+        if (val.length() > queryClient.esQueryLikeMaxSize) {
+            log.info("检索字段太长了，我截取了哈^_^");
+            val = value.substring(0, queryClient.esQueryLikeMaxSize);
+        }
+        val = replaceSpecialChar(val);
+        return val;
+    }
+
+    private static String replaceSpecialChar(String val) {
+        if (val.contains("*")) {
+            val = val.replace("*", "\\*");
+        }
+        if (val.contains("?")) {
+            val = val.replace("?", "\\?");
+        }
+        return val;
     }
 
     private static HasParentQueryBuilder getHasParentQueryBuilder(QueryBuilder builder, EsHasParentRelation relation) {
@@ -533,15 +544,9 @@ public class EsQueryParse {
 
     public static String captureName(String name) {
         char[] cs = name.toCharArray();
-        cs[0] -= 32;
+        if ('a' <= cs[0] && cs[0] <= 'z') {
+            cs[0] -= 32;
+        }
         return String.valueOf(cs);
-    }
-
-    private static String buildWildcardQueryString(String param) {
-        return "*" + param + "*";
-    }
-
-    public static String buildWildcardQueryStringLeftLike(String param) {
-        return param + "*";
     }
 }
