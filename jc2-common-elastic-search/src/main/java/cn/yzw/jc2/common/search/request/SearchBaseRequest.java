@@ -49,7 +49,7 @@ public class SearchBaseRequest<E> implements Serializable {
     private Supplier<QueryBuilder>[] customQueries;
 
     /**
-     * 是否不处理租户,默认处理租户
+     * 是否处理租户,默认处理租户
      */
-    private Boolean                  notDealTenant;
+    private Boolean                  dealTenant=true;
 }

@@ -45,7 +45,6 @@ import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
-import org.springframework.util.Assert;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -152,7 +151,7 @@ public class EsQueryParse {
         BoolQueryBuilder boolQueryBuilder = buildBoolQueryBuilder(requestParam.getParam(), sourceBuilder,
                 requestParam.getCustomQueries());
         //增加租户处理
-        if (!Boolean.TRUE.equals(requestParam.getNotDealTenant())
+        if (requestParam.getDealTenant()
                 && StringUtils.isNotBlank(requestParam.getTenantId())) {
             TermQueryBuilder termQueryBuilder = QueryBuilders.termQuery("tenantId", requestParam.getTenantId());
             boolQueryBuilder.filter(termQueryBuilder);
