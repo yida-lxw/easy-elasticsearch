@@ -1,18 +1,15 @@
 package cn.yzw.jc2.common.search.client;
 
-import cn.yzw.infra.component.utils.JsonUtils;
+import cn.yzw.jc2.common.search.parse.EsQueryParse;
+import cn.yzw.jc2.common.search.parse.EsQueryResultParse;
 import cn.yzw.jc2.common.search.request.ScrollRequest;
 import cn.yzw.jc2.common.search.request.SearchPageRequest;
+import cn.yzw.jc2.common.search.result.EsAggregationResult;
 import cn.yzw.jc2.common.search.result.ScrollResult;
 import cn.yzw.jc2.common.search.request.SearchAfterRequest;
 import cn.yzw.jc2.common.search.result.SearchAfterResult;
 import cn.yzw.jc2.common.search.result.SearchPageResult;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -28,10 +25,10 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StopWatch;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -50,7 +47,7 @@ public class EsQueryClient {
     @Value("${es.query.max-size:10000}")
     private Integer             esQueryMaxSize;
     @Value("${es.query.like.max-size:50}")
-    protected Integer           esQueryLikeMaxSize;
+    public Integer              esQueryLikeMaxSize;
 
     @Autowired
     private RestHighLevelClient restHighLevelClient;
@@ -68,13 +65,7 @@ public class EsQueryClient {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         try {
-            if (Boolean.TRUE.equals(request.getSleep())) {
-                try {
-                    Thread.sleep(esQuerySleepMs);
-                } catch (InterruptedException e) {
-                    log.warn("sleep failed");
-                }
-            }
+            sleep(request.getSleep());
 
             if (request.getPageNum() * request.getPageSize() > esQueryMaxSize) {
                 throw new IllegalArgumentException("仅支持查询前" + esQueryMaxSize + "条, 请增加查询条件缩小范围");
@@ -83,12 +74,13 @@ public class EsQueryClient {
             SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
             SearchHits hits = searchResponse.getHits();
             pageResult.setTotalCount(hits.getTotalHits().value);
-            List<O> list = getRs(oclass, searchResponse);
+            List<O> list = EsQueryResultParse.getRs(oclass, searchResponse);
             pageResult.setRecords(list);
             pageResult.setPageNum(request.getPageNum());
             pageResult.setPageSize(request.getPageSize());
             pageResult.setTotalPage(
                     Long.valueOf((pageResult.getTotalCount() - 1) / Long.valueOf(request.getPageSize()) + 1L).intValue());
+            pageResult.setAggregationResult(EsQueryResultParse.injectAggregations(searchResponse.getAggregations()));
         } catch (IOException ex) {
             log.error("es查询时出现异常, index: {}, params: {}", request.getIndex(), request, ex);
         } finally {
@@ -96,6 +88,16 @@ public class EsQueryClient {
             log.info("EsQueryClient.search耗时{}", stopWatch.getTotalTimeMillis());
         }
         return pageResult;
+    }
+
+    private <E> void sleep(Boolean request) {
+        if (Boolean.TRUE.equals(request)) {
+            try {
+                Thread.sleep(esQuerySleepMs);
+            } catch (InterruptedException e) {
+                log.warn("sleep failed");
+            }
+        }
     }
 
     /**
@@ -114,7 +116,7 @@ public class EsQueryClient {
             SearchRequest searchRequest = EsQueryParse.convertSearchAfter2Query(request);
             SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
 
-            List<O> list = getRs(oclass, searchResponse);
+            List<O> list = EsQueryResultParse.getRs(oclass, searchResponse);
             pageResult.setData(list);
             pageResult.setTotalCount(searchResponse.getHits().getTotalHits().value);
             // 获取最后一条记录, 并把 sort 的值赋值给 searchAfter
@@ -155,7 +157,7 @@ public class EsQueryClient {
                 searchResponse = restHighLevelClient.scroll(searchScrollRequest, RequestOptions.DEFAULT);
             }
 
-            List<O> list = getRs(oclass, searchResponse);
+            List<O> list = EsQueryResultParse.getRs(oclass, searchResponse);
             pageResult.setScrollId(searchResponse.getScrollId());
             pageResult.setData(list);
             pageResult.setTotalCount(searchResponse.getHits().getTotalHits().value);
@@ -174,36 +176,32 @@ public class EsQueryClient {
         return pageResult;
     }
 
-    protected static <R> List<R> getRs(Class<R> clazz, SearchResponse searchResponse) throws JsonProcessingException {
-        SearchHits hits = searchResponse.getHits();
-        List<R> list = new ArrayList<>();
-        SearchHit[] searchHits = hits.getHits();
-        for (SearchHit hit : searchHits) {
-            JsonNode jsonNode = JsonUtils.getObjectMapper().readTree(hit.getSourceAsString());
-            if (MapUtils.isNotEmpty(hit.getInnerHits())) {
-                // 回写回去
-                ObjectNode objectNode = (ObjectNode) jsonNode;
-                hit.getInnerHits().entrySet().forEach(entry -> {
-                    ArrayNode arrayNode = JsonUtils.getObjectMapper().createArrayNode();
-                    for (SearchHit innerHit : entry.getValue().getHits()) {
-                        try {
-                            JsonNode innerNode = JsonUtils.getObjectMapper().readTree(innerHit.getSourceAsString());
-                            arrayNode.add(innerNode);
-                        } catch (JsonProcessingException e) {
-                            log.error("json 转换出现问题", e);
-                        }
+    /**
+     * @Description: 聚合
+     * @Author: lbl
+     * @Date:  2023/4/6 20:24
+     * @param: oclass 出参类型
+     * @return:
+     **/
+    public <E> Map<String, EsAggregationResult> agg(SearchPageRequest<E> request) {
 
-                    }
-                    objectNode.set(entry.getKey(), arrayNode);
-                });
-
-            }
-            R model = JsonUtils.readAsObject(jsonNode.toString(), clazz);
-
-            list.add(model);
-            log.info("result: {}", JsonUtils.writeAsJson(model));
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        try {
+            request.setPageSize(0);
+            request.setPageNum(0);
+            SearchRequest searchRequest = EsQueryParse.convert2EsPageQuery(request);
+            SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+            Map<String, EsAggregationResult> aggregationResultMap = EsQueryResultParse
+                .injectAggregations(searchResponse.getAggregations());
+            return aggregationResultMap;
+        } catch (IOException ex) {
+            log.error("es查询时出现异常, index: {}, params: {}", request.getIndex(), request, ex);
+        } finally {
+            stopWatch.stop();
+            log.info("EsQueryClient.agg耗时{}", stopWatch.getTotalTimeMillis());
         }
-        return list;
+        return null;
     }
 
 }

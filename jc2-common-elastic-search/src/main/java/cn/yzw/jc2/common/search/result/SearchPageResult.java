@@ -2,6 +2,7 @@ package cn.yzw.jc2.common.search.result;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 
@@ -36,9 +37,9 @@ public class SearchPageResult<T> implements Serializable {
      * 数据集合
      */
     private List<T> records;
+    /**
+     * 聚合结果
+     */
+    private Map<String, EsAggregationResult> aggregationResult;
 
-    @Override
-    public String toString() {
-        return ReflectionToStringBuilder.toString(this);
-    }
 }
