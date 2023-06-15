@@ -167,7 +167,7 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
             try {
                 //有顺序执行
                 lock = redissonClient.getLock(buildExecLockKey(bizSequenceNo));
-                lockSuccess = lock.tryLock(0L, 600 * 1000L, TimeUnit.MILLISECONDS);
+                lockSuccess = lock.tryLock(0L, TimeUnit.MILLISECONDS);
                 if (lockSuccess) {
                     List<RetryTaskDO> retryTaskDOList = retryTaskMapper.selectExecTaskByBizSequenceNo(
                         retryTaskConfig.getTimeOutStartTime(), retryTaskConfig.getRetryTaskMaxRetryTimes(),
@@ -205,7 +205,7 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
         try {
             RetryTaskBizMethodHolder methodHolder = bizMethodRegistry.get(bizKey);
             lock = redissonClient.getLock(buildExecLockKey(taskNo));
-            lockSuccess = lock.tryLock(0L, methodHolder.getLockSeconds() * 1000L, TimeUnit.MILLISECONDS);
+            lockSuccess = lock.tryLock(0L, TimeUnit.MILLISECONDS);
             if (lockSuccess) {
                 taskDO = retryTaskMapper.selectByNo(taskNo, retryTaskConfig.getTableName());
                 if (taskDO != null) {
@@ -228,7 +228,7 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                 return false;
             }
         } catch (Exception e) {
-            log.warn("重试任务-执行异常，retry_task_no：{}, task：{}", taskNo, taskDO, e);
+            log.error("重试任务-执行异常，retry_task_no：{}, task：{}", taskNo, taskDO, e);
             String msg = e.getMessage();
             if (e instanceof InvocationTargetException) {
                 msg = ((InvocationTargetException) e).getTargetException().getMessage();
