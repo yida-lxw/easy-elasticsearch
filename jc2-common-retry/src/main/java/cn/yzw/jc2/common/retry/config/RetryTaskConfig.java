@@ -37,7 +37,7 @@ public class RetryTaskConfig {
     /**
      * 清理7天以前的数据
      */
-    @Value("${retry.task.clean.day.rate:7}")
+    @Value("${retry.task.clean.day.rate:30}")
     private Long                     cleanBeforeDays;
     @Value("${retry.task.pool.core.size:10}")
     private Integer corePoolSize;
