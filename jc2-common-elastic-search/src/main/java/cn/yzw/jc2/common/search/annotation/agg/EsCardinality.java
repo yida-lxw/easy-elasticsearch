@@ -6,17 +6,18 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * @Description: value_count
- * @Author: lbl
+ * @Description: 去重计数
+ * @Author: lbl 
  * @Date: 2023/6/25
  **/
 @Target({ ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface EsCount {
+public @interface EsCardinality {
     /**
      * 聚合名称
      */
     String aggName() default "";
+
     /**
      * filed name
      */

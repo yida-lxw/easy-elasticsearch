@@ -29,7 +29,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 
 /**
@@ -43,7 +42,7 @@ import java.util.function.BiConsumer;
 public class EsQueryResultParse {
     private final static Map<String, BiConsumer<Aggregation, EsAggregationResult>> aggregationHandlers = new HashMap<>();
     private static final List<String>                                              TERMS_TYPE_LIST     = Arrays
-        .asList("sterms", "lterms", "dterms", "distinct");
+        .asList("sterms", "lterms", "dterms");
 
     public static <R> List<R> getRs(Class<R> clazz, SearchResponse searchResponse) throws JsonProcessingException {
         SearchHits hits = searchResponse.getHits();
@@ -176,7 +175,7 @@ public class EsQueryResultParse {
             fieldAndValueList.add(map);
             esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
         });
-        aggregationHandlers.put(EsAggTypeEnum.distinct_count.name(), (aggregation, esAggregationResponseDTO) -> {
+        aggregationHandlers.put(EsAggTypeEnum.cardinality.name(), (aggregation, esAggregationResponseDTO) -> {
             ParsedCardinality parsedCardinality = (ParsedCardinality) aggregation;
 
             List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
@@ -188,112 +187,4 @@ public class EsQueryResultParse {
         });
     }
 
-    private Map<String, EsAggregationResult> injectAggregation(Aggregations aggregations) {
-
-        if (aggregations == null) {
-            return null;
-        }
-        List<Aggregation> aggregationList = aggregations.asList();
-        if (CollectionUtils.isEmpty(aggregationList)) {
-            return null;
-        }
-        Map<String, EsAggregationResult> aggregationResultMap = new HashMap<>();
-
-        for (Aggregation aggregation : aggregationList) {
-
-            EsAggregationResult esAggregationResponseDTO = new EsAggregationResult();
-            esAggregationResponseDTO.setName(aggregation.getName());
-            esAggregationResponseDTO.setAggregationType(aggregation.getType());
-            aggregationResultMap.put(aggregation.getName(), esAggregationResponseDTO);
-
-            if (TERMS_TYPE_LIST.contains(aggregation.getType())) {
-                esAggregationResponseDTO.setAggregationType(EsAggTypeEnum.terms.name());
-                ParsedTerms parsedStringTerms = (ParsedTerms) aggregation;
-                esAggregationResponseDTO.setSumOtherCount(parsedStringTerms.getSumOfOtherDocCounts());
-
-                List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
-                parsedStringTerms.getBuckets().forEach(e -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put(EsDistinctAggEnum.KEY.getFieldName(), e.getKey().toString());
-                    map.put(EsDistinctAggEnum.DOC_COUNT.getFieldName(), String.valueOf(e.getDocCount()));
-                    if (e.getAggregations() != null) {
-                        Map<String, EsAggregationResult> subAggResultMap = injectAggregation(e.getAggregations());
-                        map.putAll(subAggResultMap);
-                    }
-                    fieldAndValueList.add(map);
-                });
-                esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
-            }
-
-            if (Objects.equals(aggregation.getType(), EsAggTypeEnum.sum.name())) {
-
-                ParsedSum parsedSum = (ParsedSum) aggregation;
-                List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
-                Map<String, Object> map = new HashMap<>();
-                map.put(aggregation.getName(), Double.valueOf(parsedSum.getValue()).toString());
-
-                fieldAndValueList.add(map);
-                esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
-            }
-            if (Objects.equals(aggregation.getType(), EsAggTypeEnum.max.name())) {
-
-                ParsedMax parsedSum = (ParsedMax) aggregation;
-
-                List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
-                Map<String, Object> map = new HashMap<>();
-                map.put(aggregation.getName(), Double.valueOf(parsedSum.getValue()).toString());
-
-                fieldAndValueList.add(map);
-                esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
-            }
-            if (Objects.equals(aggregation.getType(), EsAggTypeEnum.min.name())) {
-
-                ParsedMin parsedSum = (ParsedMin) aggregation;
-
-                List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
-                Map<String, Object> map = new HashMap<>();
-                map.put(aggregation.getName(), Double.valueOf(parsedSum.getValue()).toString());
-
-                fieldAndValueList.add(map);
-                esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
-            }
-            if (Objects.equals(aggregation.getType(), EsAggTypeEnum.avg.name())) {
-
-                ParsedAvg parsedSum = (ParsedAvg) aggregation;
-
-                List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
-                Map<String, Object> map = new HashMap<>();
-                map.put(aggregation.getName(), Double.valueOf(parsedSum.getValue()).toString());
-
-                fieldAndValueList.add(map);
-                esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
-            }
-            if (Objects.equals(aggregation.getType(), EsAggTypeEnum.value_count.name())) {
-
-                ParsedValueCount parsedValueCount = (ParsedValueCount) aggregation;
-
-                List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
-                Map<String, Object> map = new HashMap<>();
-                map.put(aggregation.getName(), Double.valueOf(parsedValueCount.getValue()).toString());
-
-                fieldAndValueList.add(map);
-                esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
-            }
-
-            if (Objects.equals(aggregation.getType(), EsAggTypeEnum.distinct_count.name())) {
-
-                ParsedCardinality parsedCardinality = (ParsedCardinality) aggregation;
-
-                List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
-                Map<String, Object> map = new HashMap<>();
-                map.put(aggregation.getName(), parsedCardinality.getValue() + "");
-
-                fieldAndValueList.add(map);
-                esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
-            }
-
-        }
-        return aggregationResultMap;
-
-    }
 }

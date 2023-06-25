@@ -9,6 +9,7 @@ import cn.yzw.jc2.common.search.annotation.EsMatchPhrase;
 import cn.yzw.jc2.common.search.annotation.agg.EsAggTerms;
 import cn.yzw.jc2.common.search.annotation.agg.EsAggs;
 import cn.yzw.jc2.common.search.annotation.agg.EsAvg;
+import cn.yzw.jc2.common.search.annotation.agg.EsCardinality;
 import cn.yzw.jc2.common.search.annotation.agg.EsCount;
 import cn.yzw.jc2.common.search.annotation.agg.EsFilter;
 import cn.yzw.jc2.common.search.annotation.agg.EsMax;
@@ -56,6 +57,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.AvgAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.CardinalityAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.MaxAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.MinAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
@@ -287,6 +289,12 @@ public class EsQueryParse {
                             .field(getFiledName(field, annotation.name(), nestedPath));
                         setBuilder(nestedPath, sourceBuilder, aggregation, value, false, builder);
                     }
+                    if (field.isAnnotationPresent(EsCardinality.class)) {
+                        EsCardinality annotation = field.getAnnotation(EsCardinality.class);
+                        CardinalityAggregationBuilder builder = AggregationBuilders.cardinality(annotation.aggName())
+                            .field(getFiledName(field, annotation.name(), nestedPath));
+                        setBuilder(nestedPath, sourceBuilder, aggregation, value, false, builder);
+                    }
                     if (field.isAnnotationPresent(EsMax.class)) {
                         EsMax annotation = field.getAnnotation(EsMax.class);
                         MaxAggregationBuilder builder = AggregationBuilders.max(annotation.aggName())
@@ -302,7 +310,7 @@ public class EsQueryParse {
                     if (field.isAnnotationPresent(EsAggTerms.class)) {
                         EsAggTerms annotation = field.getAnnotation(EsAggTerms.class);
                         TermsAggregationBuilder builder = AggregationBuilders.terms(annotation.aggName())
-                            .field(getFiledName(field, annotation.name(), nestedPath));
+                            .field(getFiledName(field, annotation.name(), nestedPath)).size(annotation.size());
                         setBuilder(nestedPath, sourceBuilder, aggregation, value, annotation.hasSubAgg(), builder);
                     }
 
