@@ -6,6 +6,7 @@ import cn.yzw.jc2.common.search.annotation.EsHasChildRelation;
 import cn.yzw.jc2.common.search.annotation.EsHasParentRelation;
 import cn.yzw.jc2.common.search.annotation.EsMatch;
 import cn.yzw.jc2.common.search.annotation.EsMatchPhrase;
+import cn.yzw.jc2.common.search.annotation.agg.EsAggNested;
 import cn.yzw.jc2.common.search.annotation.agg.EsAggTerms;
 import cn.yzw.jc2.common.search.annotation.agg.EsAggs;
 import cn.yzw.jc2.common.search.annotation.agg.EsAvg;
@@ -55,6 +56,7 @@ import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.AvgAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.CardinalityAggregationBuilder;
@@ -312,6 +314,12 @@ public class EsQueryParse {
                         TermsAggregationBuilder builder = AggregationBuilders.terms(annotation.aggName())
                             .field(getFiledName(field, annotation.name(), nestedPath)).size(annotation.size());
                         setBuilder(nestedPath, sourceBuilder, aggregation, value, annotation.hasSubAgg(), builder);
+                    }
+                    if (field.isAnnotationPresent(EsAggNested.class)) {
+                        EsAggNested annotation = field.getAnnotation(EsAggNested.class);
+                        String nestPath = getFiledName(field, annotation.name(), nestedPath);
+                        NestedAggregationBuilder builder = AggregationBuilders.nested(annotation.aggName(), nestPath);
+                        setBuilder(nestPath, sourceBuilder, aggregation, value, true, builder);
                     }
 
                 } catch (Exception e) {

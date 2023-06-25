@@ -15,6 +15,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.nested.ParsedNested;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.aggregations.metrics.ParsedAvg;
 import org.elasticsearch.search.aggregations.metrics.ParsedCardinality;
@@ -118,21 +119,35 @@ public class EsQueryResultParse {
             List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
             parsedStringTerms.getBuckets().forEach(e -> {
                 Map<String, Object> map = new HashMap<>();
-                map.put(EsDistinctAggEnum.KEY.getFieldName(), e.getKey().toString());
+                map.put(EsDistinctAggEnum.KEY.getFieldName(), e.getKey());
                 map.put(EsDistinctAggEnum.DOC_COUNT.getFieldName(), String.valueOf(e.getDocCount()));
                 if (e.getAggregations() != null) {
                     Map<String, EsAggregationResult> subAggResultMap = injectAggregations(e.getAggregations());
-                    map.putAll(subAggResultMap);
+                    if (subAggResultMap != null) {
+                        map.putAll(subAggResultMap);
+                    }
                 }
                 fieldAndValueList.add(map);
             });
             esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
         });
+        aggregationHandlers.put(EsAggTypeEnum.nested.name(), (aggregation, esAggregationResponseDTO) -> {
+            ParsedNested parsedNested = (ParsedNested) aggregation;
+            Map<String, EsAggregationResult> subAggResultMap = injectAggregations(parsedNested.getAggregations());
+            if (subAggResultMap != null) {
+                Map<String, Object> map = new HashMap<>();
+                map.put(EsDistinctAggEnum.DOC_COUNT.getFieldName(), parsedNested.getDocCount());
+                List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
+                map.putAll(subAggResultMap);
+                fieldAndValueList.add(map);
+                esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
+            }
+        });
         aggregationHandlers.put(EsAggTypeEnum.sum.name(), (aggregation, esAggregationResponseDTO) -> {
             ParsedSum parsedSum = (ParsedSum) aggregation;
             List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
             Map<String, Object> map = new HashMap<>();
-            map.put(aggregation.getName(), Double.valueOf(parsedSum.getValue()).toString());
+            map.put(aggregation.getName(), parsedSum.getValue());
 
             fieldAndValueList.add(map);
             esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
@@ -142,7 +157,7 @@ public class EsQueryResultParse {
 
             List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
             Map<String, Object> map = new HashMap<>();
-            map.put(aggregation.getName(), Double.valueOf(parsedSum.getValue()).toString());
+            map.put(aggregation.getName(), parsedSum.getValue());
 
             fieldAndValueList.add(map);
             esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
@@ -151,7 +166,7 @@ public class EsQueryResultParse {
             ParsedMin parsedSum = (ParsedMin) aggregation;
             List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
             Map<String, Object> map = new HashMap<>();
-            map.put(aggregation.getName(), Double.valueOf(parsedSum.getValue()).toString());
+            map.put(aggregation.getName(), parsedSum.getValue());
 
             fieldAndValueList.add(map);
             esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
@@ -160,7 +175,7 @@ public class EsQueryResultParse {
             ParsedAvg parsedSum = (ParsedAvg) aggregation;
             List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
             Map<String, Object> map = new HashMap<>();
-            map.put(aggregation.getName(), Double.valueOf(parsedSum.getValue()).toString());
+            map.put(aggregation.getName(), parsedSum.getValue());
 
             fieldAndValueList.add(map);
             esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
@@ -170,7 +185,7 @@ public class EsQueryResultParse {
 
             List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
             Map<String, Object> map = new HashMap<>();
-            map.put(aggregation.getName(), Double.valueOf(parsedValueCount.getValue()).toString());
+            map.put(aggregation.getName(), parsedValueCount.getValue());
 
             fieldAndValueList.add(map);
             esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
@@ -180,8 +195,7 @@ public class EsQueryResultParse {
 
             List<Map<String, Object>> fieldAndValueList = new ArrayList<>();
             Map<String, Object> map = new HashMap<>();
-            map.put(aggregation.getName(), parsedCardinality.getValue() + "");
-
+            map.put(aggregation.getName(), parsedCardinality.getValue());
             fieldAndValueList.add(map);
             esAggregationResponseDTO.setFieldAndValueList(fieldAndValueList);
         });

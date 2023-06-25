@@ -72,7 +72,7 @@ public class TestController {
         SearchPageRequest<Object> request = new SearchPageRequest<>();
         EsAggBaseQuery query = new EsAggBaseQuery();
         request.setParam(query);
-        request.setIndex("idx_ppls_plan_project_info_qa");
+        request.setIndex("idx_ppls_plan_monthly_info_qa");
 
         return JsonUtils.writeAsJson(esQueryService.agg(request));
     }
