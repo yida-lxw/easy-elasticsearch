@@ -275,7 +275,7 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
 
     }
 
-    private String buildExecLockKey(String taskNo) {
+    public String buildExecLockKey(String taskNo) {
         return retryTaskConfig.getAppName() + "_" + retry_task_EXEC_LOCK_PREFIX + taskNo;
     }
 

@@ -8,6 +8,7 @@ import cn.yzw.jc2.common.util.thread.ThreadPoolMdcWrapperExecutor;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -45,7 +46,6 @@ public class RetryTaskConfig {
     private Integer maxPoolSize;
     @Value("${retry.task.pool.queue.size:500}")
     private Integer queuePoolSize;
-
     public Date getTimeOutStartTime() {
         return new Date(System.currentTimeMillis() - retryTaskTimeoutSeconds * 1000L);
     }
@@ -60,6 +60,7 @@ public class RetryTaskConfig {
     }
 
     @Bean("supRetryTaskDomainService")
+    @ConditionalOnMissingBean(name = "supRetryTaskDomainService")
     public RetryTaskDomainService SupRetryTaskDomainServiceImpl() {
         return new RetryTaskDomainImpl();
     }
