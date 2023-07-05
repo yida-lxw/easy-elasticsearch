@@ -47,17 +47,17 @@ public class RetryTaskJob {
                     executeTaskByNos(param.getExecuteTaskNos());
                 } else {
                     // 查询可执行的重试任务，并执行任务
-                    queryAndExecRetryTask();
+                    queryAndExecRetryTask(param.getIncludeBizKeys(),param.getExcludeBizKeys());
                 }
                 // 查询是否存在超过最大执行次数的任务，存在则打印警告日志
                 queryAndLogWarnRetryTask();
             } else if (Param.DELETE_TASK.equals(param.getMode())) {
                 // 删除重试任务
-                deleteTaskByNos(param.getDeleteTaskNos());
+                deleteTaskByNos(param.getExecuteTaskNos());
             } else if (Param.RESET_TASK.equals(param.getMode())) {
-                if (CollectionUtils.isNotEmpty(param.getResetTaskNos())) {
+                if (CollectionUtils.isNotEmpty(param.getExecuteTaskNos())) {
                     // 重置任务次数
-                    resetTaskByNos(param.getResetTaskNos());
+                    resetTaskByNos(param.getExecuteTaskNos());
                 }
             }
             return ReturnT.SUCCESS;
@@ -90,7 +90,7 @@ public class RetryTaskJob {
         return new ReturnT(ReturnT.SUCCESS_CODE, String.format("删除成功%d条数据", num));
     }
 
-    private void queryAndExecRetryTask() {
+    private void queryAndExecRetryTask(List<String> includeBizKeys, List<String> excludeBizKeys) {
         Long minId = Long.MIN_VALUE;
         //一次调度超过1000次，中断，等待xxljob下次调度
         int execCount = 1000;
@@ -107,7 +107,7 @@ public class RetryTaskJob {
             }
             List<RetryTaskDO> taskList = supRetryTaskDomainService.selectExecutableTask(
                 retryTaskConfig.getTimeOutStartTime(), retryTaskConfig.getRetryTaskMaxRetryTimes(),
-                retryTaskConfig.getRetryTaskPageSize(), minId);
+                retryTaskConfig.getRetryTaskPageSize(), minId,includeBizKeys,excludeBizKeys);
             if (CollectionUtils.isEmpty(taskList)) {
                 break;
             }
@@ -161,17 +161,37 @@ public class RetryTaskJob {
 
     @Data
     private static class Param {
+        /**
+         * 执行重试任务，默认值
+         */
         public static final String EXECUTE_TASK = "EXECUTE_TASK";
+        /**
+         * 删除重试任务，物理删除，不可恢复
+         */
         public static final String DELETE_TASK  = "DELETE_TASK";
+        /**
+         * 将任务执行次数重置为0，可重新拉起执行
+         */
         public static final String RESET_TASK   = "RESET_TASK";
 
-        private String             mode;
-        private List<String>       deleteTaskNos;
-        private List<String>       executeTaskNos;
-        private List<String>       resetTaskNos;
+        /**
+         * 执行类别
+         */
+        private String             mode         = EXECUTE_TASK;
 
-        public Param() {
-            this.mode = Param.EXECUTE_TASK;
-        }
+        /**
+         * 要执行重试任务编号
+         */
+        private List<String>       executeTaskNos;
+
+        /**
+         * 指定执行业务类型，默认执行所有业务类型
+         */
+        private List<String>       includeBizKeys;
+        /**
+         * 指定不执行的业务类型，默认执行所有业务类型
+         */
+        private List<String>       excludeBizKeys;
+
     }
 }

@@ -162,17 +162,27 @@
         select /* RetryTaskMapper-selectExecutableTask */
         <include refid="Base_Column_List"/>
         from ${tableName}
-        <![CDATA[
-    where (
+        where (
         task_exec_status = 'PENDING'
         or
-        (task_exec_status = 'FAIL' and task_exec_count < #{maxRetryTimes})
+        (task_exec_status = 'FAIL' and task_exec_count <![CDATA[ < ]]> #{maxRetryTimes})
         or
-        (task_exec_status = 'EXECUTING' and task_start_time < #{timeOutStartTime})
-    )
-    and id>#{minId}
-    and task_plan_exec_time <= now()
-    ]]>
+        (task_exec_status = 'EXECUTING' and task_start_time <![CDATA[ < ]]>#{timeOutStartTime})
+        )
+        and id>#{minId}
+        and task_plan_exec_time <![CDATA[ <= ]]> now()
+        <if test="includeBizTypes !=null and includeBizTypes.size > 0">
+            and biz_key in
+            <foreach collection="includeBizTypes" index="idx" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="excludeBizTypes !=null and excludeBizTypes.size > 0">
+            and biz_key not in
+            <foreach collection="excludeBizTypes" index="idx" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
         order by id asc
         limit #{pageSize}
     </select>

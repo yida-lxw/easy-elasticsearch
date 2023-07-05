@@ -105,8 +105,8 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
 
     @Override
     public List<RetryTaskDO> selectExecutableTask(Date timeOutStartTime, Integer maxRetryTimes, Integer pageSize,
-                                                  Long minId) {
-        return retryTaskMapper.selectExecutableTask(timeOutStartTime, maxRetryTimes, pageSize, minId,
+                                                  Long minId,List<String> includeBizTypes, List<String> excludeBizTypes) {
+        return retryTaskMapper.selectExecutableTask(timeOutStartTime, maxRetryTimes, pageSize, minId,includeBizTypes,excludeBizTypes,
             retryTaskConfig.getTableName());
     }
 

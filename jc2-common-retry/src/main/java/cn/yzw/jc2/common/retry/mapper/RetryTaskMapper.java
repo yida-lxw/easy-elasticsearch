@@ -41,6 +41,8 @@ public interface RetryTaskMapper {
                                            @Param("maxRetryTimes") Integer maxRetryTimes,
                                            @Param("pageSize") Integer pageSize,
                                            @Param("minId") Long minId,
+                                           @Param("includeBizTypes") List<String> includeBizTypes,
+                                           @Param("excludeBizTypes") List<String> excludeBizTypes,
                                            @Param("tableName") String tableName);
 
     List<RetryTaskDO> selectPrevBizSequenceTask(@Param("bizSequenceNo") String bizSequenceNo,

@@ -51,7 +51,7 @@ public interface RetryTaskDomainService {
      * @return
      */
     List<RetryTaskDO> selectExecutableTask(Date timeOutStartTime, Integer maxRetryTimes, Integer pageSize,
-                                           Long minId);
+                                           Long minId, List<String> includeBizTypes, List<String> excludeBizTypes);
 
     /**
      * 查询不可执行的重试任务列表
@@ -89,4 +89,5 @@ public interface RetryTaskDomainService {
      * @return
      */
     List<RetryTaskDO> batchQueryByTaskNos(List<String> retryTaskNos);
+
 }
