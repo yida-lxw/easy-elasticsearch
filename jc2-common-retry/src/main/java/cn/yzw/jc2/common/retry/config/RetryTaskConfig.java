@@ -46,6 +46,11 @@ public class RetryTaskConfig {
     private Integer maxPoolSize;
     @Value("${retry.task.pool.queue.size:500}")
     private Integer queuePoolSize;
+    /**
+     * 环境标识，主要用来区分线上和stg环境，默认为空
+     */
+    @Value("${retry.env.flag:null}")
+    private String  retryEnvFlag;
     public Date getTimeOutStartTime() {
         return new Date(System.currentTimeMillis() - retryTaskTimeoutSeconds * 1000L);
     }

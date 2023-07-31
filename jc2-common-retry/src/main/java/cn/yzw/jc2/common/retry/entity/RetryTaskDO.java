@@ -98,4 +98,9 @@ public class RetryTaskDO implements Serializable {
      * RetryTaskPriorityCheckEnums
      */
     private String  bizSequenceLowPriorityCanExec;
+
+    /**
+     * 环境标识，主要用来区分线上和stg环境，默认为空
+     */
+    private String  retryEnvFlag;
 }

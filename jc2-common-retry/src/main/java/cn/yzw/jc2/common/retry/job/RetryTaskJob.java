@@ -80,7 +80,8 @@ public class RetryTaskJob {
         Date date = DateUtils.addDays(new Date(), -1 * retryTaskConfig.getCleanBeforeDays());
         List ids;
         do {
-            ids = this.retryTaskMapper.queryBatchForDel(500, minId, date, this.retryTaskConfig.getTableName());
+            ids = this.retryTaskMapper.queryBatchForDel(500, minId, date, this.retryTaskConfig.getTableName(),
+                retryTaskConfig.getRetryEnvFlag());
             if (CollectionUtils.isNotEmpty(ids)) {
                 this.retryTaskMapper.batchDeleteByPrimaryKey(ids, this.retryTaskConfig.getTableName());
                 minId = (Long) ids.get(ids.size() - 1);

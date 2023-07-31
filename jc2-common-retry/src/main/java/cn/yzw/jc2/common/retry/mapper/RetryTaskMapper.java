@@ -43,23 +43,23 @@ public interface RetryTaskMapper {
                                            @Param("minId") Long minId,
                                            @Param("includeBizTypes") List<String> includeBizTypes,
                                            @Param("excludeBizTypes") List<String> excludeBizTypes,
-                                           @Param("tableName") String tableName);
+                                           @Param("tableName") String tableName,@Param("retryEnvFlag") String retryEnvFlag);
 
     List<RetryTaskDO> selectPrevBizSequenceTask(@Param("bizSequenceNo") String bizSequenceNo,
                                           @Param("bizKey") String bizKey,
                                           @Param("bizSequencePriority") Integer bizSequencePriority,
-                                          @Param("tableName") String tableName);
+                                          @Param("tableName") String tableName,@Param("retryEnvFlag") String retryEnvFlag);
 
     List<RetryTaskDO> selectExecTaskByBizSequenceNo(@Param("timeOutStartTime") Date timeOutStartTime,
                                                            @Param("maxRetryTimes") Integer maxRetryTimes,
                                                            @Param("bizSequenceNo") String bizSequenceNo,
-                                                           @Param("tableName") String tableName);
+                                                           @Param("tableName") String tableName,@Param("retryEnvFlag") String retryEnvFlag);
 
     List<RetryTaskDO> selectUnexecutableTask(@Param("maxRetryTimes") Integer maxRetryTimes,
-                                             @Param("pageSize") Integer pageSize, @Param("tableName") String tableName);
+                                             @Param("pageSize") Integer pageSize, @Param("tableName") String tableName,@Param("retryEnvFlag") String retryEnvFlag);
 
     List<Long> queryBatchForDel(@Param("limit") Integer limit, @Param("minId") Long minId, @Param("date") Date date,
-                                @Param("tableName") String tableName);
+                                @Param("tableName") String tableName,@Param("retryEnvFlag") String retryEnvFlag);
 
     int batchDeleteByPrimaryKey(@Param("ids") List<Long> ids, @Param("tableName") String tableName);
 

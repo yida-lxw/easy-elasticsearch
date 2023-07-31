@@ -87,7 +87,7 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                     : RetryTaskPriorityCheckEnums.YES.name())
             .taskPlanExecTime(createTask.getTaskPlanExecTime() != null ? createTask.getTaskPlanExecTime() : new Date())
             .taskExecStatus(RetryTaskStatusEnum.PENDING.name()).taskExecCount(0).taskData(createTask.getTaskData())
-            .tableName(retryTaskConfig.getTableName()).build();
+            .tableName(retryTaskConfig.getTableName()).retryEnvFlag(retryTaskConfig.getRetryEnvFlag()).build();
         return retryTaskDO;
     }
 
@@ -107,7 +107,7 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
     public List<RetryTaskDO> selectExecutableTask(Date timeOutStartTime, Integer maxRetryTimes, Integer pageSize,
                                                   Long minId,List<String> includeBizTypes, List<String> excludeBizTypes) {
         return retryTaskMapper.selectExecutableTask(timeOutStartTime, maxRetryTimes, pageSize, minId,includeBizTypes,excludeBizTypes,
-            retryTaskConfig.getTableName());
+            retryTaskConfig.getTableName(), retryTaskConfig.getRetryEnvFlag());
     }
 
 
@@ -130,7 +130,7 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
 
     @Override
     public List<RetryTaskDO> selectUnexecutableTask(Integer maxRetryTimes, Integer pageSize) {
-        return retryTaskMapper.selectUnexecutableTask(maxRetryTimes, pageSize, retryTaskConfig.getTableName());
+        return retryTaskMapper.selectUnexecutableTask(maxRetryTimes, pageSize, retryTaskConfig.getTableName(),retryTaskConfig.getRetryEnvFlag());
     }
 
     @Override
@@ -171,7 +171,7 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                 if (lockSuccess) {
                     List<RetryTaskDO> retryTaskDOList = retryTaskMapper.selectExecTaskByBizSequenceNo(
                         retryTaskConfig.getTimeOutStartTime(), retryTaskConfig.getRetryTaskMaxRetryTimes(),
-                        bizSequenceNo, retryTaskConfig.getTableName());
+                        bizSequenceNo, retryTaskConfig.getTableName(), retryTaskConfig.getRetryEnvFlag());
                     for (RetryTaskDO retryTaskDO : retryTaskDOList) {
                         boolean execSuccess = this.execTask(retryTaskDO.getRetryTaskNo(), retryTaskDO.getBizKey());
                         if (!execSuccess) {
@@ -259,7 +259,8 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
         if (taskDO.getBizSequenceNo() != null && taskDO.getBizSequencePriority() != null
             && taskDO.getBizSequencePriority() > 0) {
             List<RetryTaskDO> preRetryTaskDOList = retryTaskMapper.selectPrevBizSequenceTask(taskDO.getBizSequenceNo(),
-                bizKey, taskDO.getBizSequencePriority(), retryTaskConfig.getTableName());
+                bizKey, taskDO.getBizSequencePriority(), retryTaskConfig.getTableName(),
+                retryTaskConfig.getRetryEnvFlag());
             if (CollectionUtils.isEmpty(preRetryTaskDOList)) {
                 return RetryTaskPriorityCheckEnums.YES.name().equals(taskDO.getBizSequenceLowPriorityCanExec());
             } else {
