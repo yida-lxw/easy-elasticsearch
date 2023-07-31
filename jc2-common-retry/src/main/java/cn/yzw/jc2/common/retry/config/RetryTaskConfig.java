@@ -59,9 +59,9 @@ public class RetryTaskConfig {
         return taskExecutor;
     }
 
-    @Bean("supRetryTaskDomainService")
-    @ConditionalOnMissingClass("cn.yzw.jc2.common.retry.service.RetryTaskDomainService")
-    public RetryTaskDomainService SupRetryTaskDomainServiceImpl() {
+    @Bean("retryTaskDomainService")
+    @ConditionalOnMissingClass("cn.yzw.jc2.common.retry.service.RetryTaskDomainImpl")
+    public RetryTaskDomainService retryTaskDomainService() {
         return new RetryTaskDomainImpl();
     }
 
