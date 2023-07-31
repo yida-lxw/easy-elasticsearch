@@ -74,4 +74,8 @@ public class RetryTaskConfig {
     public RetryTaskJob RetryTaskJob() {
         return new RetryTaskJob();
     }
+
+    public String getRetryEnvFlag() {
+        return "null".equals(retryEnvFlag) ? null : retryEnvFlag;
+    }
 }
