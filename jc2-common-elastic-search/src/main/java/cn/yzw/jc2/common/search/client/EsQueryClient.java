@@ -1,5 +1,6 @@
 package cn.yzw.jc2.common.search.client;
 
+import cn.yzw.infra.component.utils.AssertUtils;
 import cn.yzw.infra.component.utils.JsonUtils;
 import cn.yzw.jc2.common.search.request.ScrollRequest;
 import cn.yzw.jc2.common.search.request.SearchPageRequest;
@@ -75,10 +76,9 @@ public class EsQueryClient {
                     log.warn("sleep failed");
                 }
             }
+            AssertUtils.isTrue(request.getPageNum() * request.getPageSize() <= esQueryMaxSize,
+                "仅支持查询前" + esQueryMaxSize + "条, 请增加查询条件缩小范围");
 
-            if (request.getPageNum() * request.getPageSize() > esQueryMaxSize) {
-                throw new IllegalArgumentException("仅支持查询前" + esQueryMaxSize + "条, 请增加查询条件缩小范围");
-            }
             SearchRequest searchRequest = EsQueryParse.convert2EsPageQuery(request);
             SearchResponse searchResponse = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
             SearchHits hits = searchResponse.getHits();
