@@ -35,6 +35,10 @@ public class RetryTaskDO implements Serializable {
     private Date    updateTime;
 
     /**
+     * 租户id
+     */
+    private String  tenantId;
+    /**
      * 重试任务唯一编号
      */
     private String  retryTaskNo;

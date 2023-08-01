@@ -24,4 +24,11 @@ public class RetryTaskBizMethodHolder {
      * 分布式锁超时时间
      */
     private Long lockSeconds;
+
+    /**
+     * 重试任务异步回调的时候，是否需要回传租户，
+     * 默认不需要，如果开启，会将tenantId返回，与此同时，
+     * 业务方法需要定义为2个参数，示例如下
+     */
+    private boolean needReturnTenantId;
 }

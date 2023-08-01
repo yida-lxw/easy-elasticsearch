@@ -26,4 +26,15 @@ public @interface RetryTask {
      * @return
      */
     long lockSeconds() default 600L;
+
+    /**
+     * 重试任务异步回调的时候，是否需要回传租户，
+     * 默认不需要，如果开启，会将tenantId返回，与此同时，
+     * 业务方法需要定义为2个参数，示例如下
+     * @RetryTask(value = RetryBizKeyConstant.PLAN_COMPLETE_TODO_BY_BIZ_BATCH_NO,needReturnTenantId = true)
+     * public void completeTodo(String param, String tenantId) {
+     * }
+     */
+    boolean needReturnTenantId() default false;
+
 }

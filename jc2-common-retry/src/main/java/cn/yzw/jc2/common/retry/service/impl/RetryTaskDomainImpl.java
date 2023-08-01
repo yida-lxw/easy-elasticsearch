@@ -217,7 +217,12 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                     AssertUtils.isTrue(validatePrevBizSequenceTask(bizKey, taskDO), "上一优先级的任务未执行成功，本级业务不允许执行");
                     retryTaskMapper.updateExecutingStatusByNo(taskNo, RetryTaskStatusEnum.EXECUTING.name(),
                         retryTaskConfig.getTableName());
-                    methodHolder.getBizMethod().invoke(methodHolder.getTargetService(), taskDO.getTaskData());
+                    if (methodHolder.isNeedReturnTenantId()) {
+                        methodHolder.getBizMethod().invoke(methodHolder.getTargetService(), taskDO.getTaskData(),
+                            taskDO.getTenantId());
+                    } else {
+                        methodHolder.getBizMethod().invoke(methodHolder.getTargetService(), taskDO.getTaskData());
+                    }
                     retryTaskMapper.updateResultStatusByNo(taskNo, RetryTaskStatusEnum.SUCCESS.name(), null,
                         retryTaskConfig.getTableName());
                     log.info("重试任务-成功-执行完成任务！task：{}", taskDO);
@@ -320,15 +325,15 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                 if (this.bizMethodRegistry.containsKey(bizKey)) {
                     throw new RuntimeException("retryTask biz method[" + bizKey + "] naming conflicts.");
                 }
-                if (!(method.getParameterTypes().length == 1
-                      && method.getParameterTypes()[0].isAssignableFrom(String.class))) {
-                    throw new RuntimeException("retryTask biz method param-classtype invalid, for[" + bean.getClass()
-                                               + "#" + method.getName() + "] , "
-                                               + "The correct method format like \" public void bizMethod(String param) \" .");
-                }
+//                if (!(method.getParameterTypes().length == 1
+//                      && method.getParameterTypes()[0].isAssignableFrom(String.class))) {
+//                    throw new RuntimeException("retryTask biz method param-classtype invalid, for[" + bean.getClass()
+//                                               + "#" + method.getName() + "] , "
+//                                               + "The correct method format like \" public void bizMethod(String param) \" .");
+//                }
                 method.setAccessible(true);
                 bizMethodRegistry.put(bizKey, RetryTaskBizMethodHolder.builder().targetService(bean).bizMethod(method)
-                    .lockSeconds(lockSeconds).build());
+                    .lockSeconds(lockSeconds).needReturnTenantId(retryTask.needReturnTenantId()).build());
             }
         }
     }
