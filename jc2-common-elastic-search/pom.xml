@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>jc2-common-elastic-search</artifactId>
-    <version>1.0.20230603</version>
+    <version>1.0.20230808</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -48,12 +48,12 @@
             <groupId>cn.yzw.infra</groupId>
             <artifactId>yzw-component-utils</artifactId>
             <version>1.1.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>cn.yzw.infra</groupId>
-                    <artifactId>yzw-component-base</artifactId>
-                </exclusion>
-            </exclusions>
+            <!--            <exclusions>-->
+            <!--                <exclusion>-->
+            <!--                    <groupId>cn.yzw.infra</groupId>-->
+            <!--                    <artifactId>yzw-component-base</artifactId>-->
+            <!--                </exclusion>-->
+            <!--            </exclusions>-->
         </dependency>
     </dependencies>
     <build>
