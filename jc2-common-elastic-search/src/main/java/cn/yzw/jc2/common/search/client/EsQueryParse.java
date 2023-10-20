@@ -1,27 +1,14 @@
 package cn.yzw.jc2.common.search.client;
 
-import cn.yzw.infra.component.utils.JsonUtils;
-import cn.yzw.infra.component.utils.SpringContextUtils;
-import cn.yzw.jc2.common.search.annotation.EsHasChildRelation;
-import cn.yzw.jc2.common.search.annotation.EsHasParentRelation;
-import cn.yzw.jc2.common.search.annotation.EsMatch;
-import cn.yzw.jc2.common.search.annotation.EsMatchPhrase;
-import cn.yzw.jc2.common.search.request.Order;
-import cn.yzw.jc2.common.search.request.ScrollRequest;
-import cn.yzw.jc2.common.search.request.SearchPageRequest;
-import cn.yzw.jc2.common.search.request.SearchBaseRequest;
-import cn.yzw.jc2.common.search.annotation.EsEquals;
-import cn.yzw.jc2.common.search.annotation.EsIn;
-import cn.yzw.jc2.common.search.annotation.EsNotEquals;
-import cn.yzw.jc2.common.search.annotation.EsNotLike;
-import cn.yzw.jc2.common.search.annotation.EsNotNull;
-import cn.yzw.jc2.common.search.annotation.EsRange;
-import cn.yzw.jc2.common.search.annotation.EsLike;
-import cn.yzw.jc2.common.search.annotation.EsMulti;
-import cn.yzw.jc2.common.search.annotation.EsNested;
-import cn.yzw.jc2.common.search.annotation.EsNotNullFields;
-import cn.yzw.jc2.common.search.request.SearchAfterRequest;
-import lombok.extern.slf4j.Slf4j;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -46,14 +33,29 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import cn.yzw.infra.component.utils.JsonUtils;
+import cn.yzw.infra.component.utils.SpringContextUtils;
+import cn.yzw.jc2.common.search.annotation.EsEquals;
+import cn.yzw.jc2.common.search.annotation.EsHasChildRelation;
+import cn.yzw.jc2.common.search.annotation.EsHasParentRelation;
+import cn.yzw.jc2.common.search.annotation.EsIn;
+import cn.yzw.jc2.common.search.annotation.EsIsNull;
+import cn.yzw.jc2.common.search.annotation.EsLike;
+import cn.yzw.jc2.common.search.annotation.EsMatch;
+import cn.yzw.jc2.common.search.annotation.EsMatchPhrase;
+import cn.yzw.jc2.common.search.annotation.EsMulti;
+import cn.yzw.jc2.common.search.annotation.EsNested;
+import cn.yzw.jc2.common.search.annotation.EsNotEquals;
+import cn.yzw.jc2.common.search.annotation.EsNotLike;
+import cn.yzw.jc2.common.search.annotation.EsNotNull;
+import cn.yzw.jc2.common.search.annotation.EsNotNullFields;
+import cn.yzw.jc2.common.search.annotation.EsRange;
+import cn.yzw.jc2.common.search.request.Order;
+import cn.yzw.jc2.common.search.request.ScrollRequest;
+import cn.yzw.jc2.common.search.request.SearchAfterRequest;
+import cn.yzw.jc2.common.search.request.SearchBaseRequest;
+import cn.yzw.jc2.common.search.request.SearchPageRequest;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * ES查询解析
@@ -285,6 +287,10 @@ public class EsQueryParse {
                             ExistsQueryBuilder query = getNotNullQuery(field, nestedPath);
                             boolQueryBuilder.filter(query);
                         }
+                        if (field.isAnnotationPresent(EsIsNull.class)) {
+                            BoolQueryBuilder query = getIsNullQuery(field, nestedPath);
+                            boolQueryBuilder.filter(query);
+                        }
                         if (field.isAnnotationPresent(EsMatchPhrase.class)) {
                             MatchPhraseQueryBuilder matchPhrase = getMatchPhrase(field, value, nestedPath);
                             boolQueryBuilder.filter(matchPhrase);
@@ -439,13 +445,17 @@ public class EsQueryParse {
     }
 
     private static BoolQueryBuilder getNotEqualsQuery(Field field, Object value, String nestedPath) {
-        String likeValue = (String) value;
         EsNotEquals esNotEquals = field.getAnnotation(EsNotEquals.class);
         String filedName = getFiledName(field, esNotEquals.name(), nestedPath);
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        return boolQueryBuilder.mustNot(QueryBuilders.termQuery(filedName, likeValue));
+        return boolQueryBuilder.mustNot(QueryBuilders.termQuery(filedName, value));
     }
-
+    private static BoolQueryBuilder getIsNullQuery(Field field, String nestedPath) {
+        EsIsNull esNotNull = field.getAnnotation(EsIsNull.class);
+        String filedName = getFiledName(field, esNotNull.name(), nestedPath);
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+        return boolQuery.mustNot(QueryBuilders.existsQuery(filedName));
+    }
     private static MatchQueryBuilder getMatch(Field field, Object value, String nestedPath) {
         EsMatch esMatchPhrase = field.getAnnotation(EsMatch.class);
         String filedName = getFiledName(field, esMatchPhrase.name(), nestedPath);

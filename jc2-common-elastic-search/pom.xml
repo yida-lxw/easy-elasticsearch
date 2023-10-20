@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>jc2-common-elastic-search</artifactId>
-    <version>1.0.20230808</version>
+    <version>1.0.20231020</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
