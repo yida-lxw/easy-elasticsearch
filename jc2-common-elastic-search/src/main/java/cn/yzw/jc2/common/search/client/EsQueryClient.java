@@ -32,7 +32,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -52,6 +54,9 @@ public class EsQueryClient {
     private Integer             esQueryMaxSize;
     @Value("${es.query.like.max-size:50}")
     protected Integer           esQueryLikeMaxSize;
+
+    @Value("#{${es.query.sleep.index.config:{}}}")
+    private Map<String, Long>   esIndexSleepConfigMap = new HashMap<>();
 
     @Autowired
     private RestHighLevelClient restHighLevelClient;
@@ -74,6 +79,15 @@ public class EsQueryClient {
                     Thread.sleep(esQuerySleepMs);
                 } catch (InterruptedException e) {
                     log.warn("sleep failed");
+                }
+            } else {
+                if (esIndexSleepConfigMap.containsKey(request.getIndex())) {
+                    try {
+                        Long time = esIndexSleepConfigMap.get(request.getIndex());
+                        Thread.sleep(time == null ? esQuerySleepMs : time);
+                    } catch (InterruptedException e) {
+                        log.warn("sleep failed");
+                    }
                 }
             }
             AssertUtils.isTrue(request.getPageNum() * request.getPageSize() <= esQueryMaxSize,
