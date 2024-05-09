@@ -16,6 +16,13 @@ public class MysqlTableUpdateJob {
     @Autowired
     private MysqlTableFieldsUpdateExecute mysqlTableFieldsUpdateExecute;
 
+    /**
+     * @Description: mysql表字段更新
+     * @Author: lbl
+     * @Date:  2024/5/9 14:51
+     * @param: 参数示例 {"tableName":"pps_agent_change_recorde","fieldList":[{"updateFieldType":"VALUE","targetFieldName":"create_user_id","targetValue":2},{"updateFieldType":"VALUE","targetFieldName":"create_name","targetValue":"特殊形态"}]}
+     * @return:
+     **/
     @XxlJob("mysqlTableUpdateJob")
     public ReturnT retryTaskExec(String paramStr) {
         try {
