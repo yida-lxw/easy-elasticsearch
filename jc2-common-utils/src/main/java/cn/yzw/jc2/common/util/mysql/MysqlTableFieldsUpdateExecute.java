@@ -3,6 +3,7 @@ package cn.yzw.jc2.common.util.mysql;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
 
@@ -20,6 +21,17 @@ public class MysqlTableFieldsUpdateExecute {
     private JdbcTemplate jdbcTemplate;
 
     /**
+     * 睡眠间隙，单位：ms，默认10ms
+     */
+    @Value("${mysql.table.field.sleep.gap:10}")
+    private Long         sleepGap;
+    /**
+     * // 每页查询返回的记录数
+     */
+    @Value("${mysql.table.field.page.size:100}")
+    private Integer      pageSize;
+
+    /**
      * @Description: 按表的维度，遍历查询，批量更新数据库
      * @Author: lbl
      * @Date: 2024/5/8 15:26
@@ -27,12 +39,13 @@ public class MysqlTableFieldsUpdateExecute {
      * @return:
      **/
     public void execute(UpdateTableParams updateTableParams) {
+        if (pageSize <= 0) {
+            throw new IllegalArgumentException("每页大小不能小于等于0");
+        }
         Long maxId = selectMaxId(updateTableParams.getTableName());
         if (maxId == null) {
             return;
         }
-        // 每页查询返回的记录数
-        int pageSize = 100;
 
         // 上一次查询结果中最后一个ID
         long lastId = updateTableParams.getStartId() == null ? 0 : updateTableParams.getStartId();
@@ -48,6 +61,14 @@ public class MysqlTableFieldsUpdateExecute {
 
             // 更新lastId
             lastId = ids.get(ids.size() - 1);
+
+            try {
+                if (sleepGap > 0) {
+                    Thread.sleep(sleepGap);
+                }
+            } catch (InterruptedException e) {
+                log.warn("MysqlTableFieldsUpdateExecute.execute线程异常", e);
+            }
         }
     }
 
