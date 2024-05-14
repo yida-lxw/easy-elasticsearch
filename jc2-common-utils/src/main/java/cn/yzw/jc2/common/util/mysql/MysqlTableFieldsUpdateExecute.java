@@ -2,6 +2,7 @@ package cn.yzw.jc2.common.util.mysql;
 
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -42,7 +43,7 @@ public class MysqlTableFieldsUpdateExecute {
         if (pageSize <= 0) {
             throw new IllegalArgumentException("每页大小不能小于等于0");
         }
-        Long maxId = selectMaxId(updateTableParams.getTableName());
+        Long maxId = selectMaxId(updateTableParams.getTableName(), updateTableParams.getQueryCondition());
         if (maxId == null) {
             return;
         }
@@ -51,7 +52,8 @@ public class MysqlTableFieldsUpdateExecute {
         long lastId = updateTableParams.getStartId() == null ? 0 : updateTableParams.getStartId();
 
         while (lastId <= maxId) {
-            List<Long> ids = select(updateTableParams.getTableName(), lastId, pageSize);
+            List<Long> ids = select(updateTableParams.getTableName(), lastId, pageSize,
+                updateTableParams.getQueryCondition());
             if (CollectionUtils.isEmpty(ids)) {
                 log.info("MysqlTableFieldsUpdateExecute.execute最后执行id:{}", lastId);
                 break;
@@ -97,18 +99,22 @@ public class MysqlTableFieldsUpdateExecute {
             }
         }
         // 构建 SQL 语句
-        String sql = "UPDATE " + updateTableParams.getTableName() + " SET " + set + " WHERE id IN (";
+        StringBuilder sql = new StringBuilder("UPDATE ");
+        sql.append(updateTableParams.getTableName()).append(" SET ").append(set).append(" WHERE id IN (");
 
         // 拼接参数
         for (int i = 0; i < ids.size(); i++) {
-            sql += "?";
+            sql.append("?");
             if (i < ids.size() - 1) {
-                sql += ", ";
+                sql.append(", ");
             }
         }
-        sql += ")";
+        sql.append(")");
+        if (StringUtils.isNotBlank(updateTableParams.getQueryCondition())) {
+            sql.append(" AND ").append(updateTableParams.getQueryCondition());
+        }
         // 执行更新操作
-        return jdbcTemplate.update(sql, ids.toArray());
+        return jdbcTemplate.update(sql.toString(), ids.toArray());
     }
 
     /**
@@ -118,8 +124,14 @@ public class MysqlTableFieldsUpdateExecute {
      * @param:
      * @return:
      **/
-    public List<Long> select(String table, Long lastId, Integer pageSize) {
-        return jdbcTemplate.query("SELECT id FROM " + table + " WHERE id > ? ORDER BY id ASC LIMIT ?",
+    public List<Long> select(String table, Long lastId, Integer pageSize, String queryCondition) {
+        StringBuilder sql = new StringBuilder("SELECT id FROM ");
+        sql.append(table).append(" WHERE id > ? ");
+        if (StringUtils.isNotBlank(queryCondition)) {
+            sql.append(" AND ").append(queryCondition);
+        }
+        sql.append(" ORDER BY id ASC LIMIT ?");
+        return jdbcTemplate.query(sql.toString(),
             new Object[] { lastId, pageSize }, (rs, rowNum) -> rs.getLong("id"));
     }
 
@@ -130,7 +142,12 @@ public class MysqlTableFieldsUpdateExecute {
      * @param:
      * @return:
      **/
-    public Long selectMaxId(String table) {
-        return jdbcTemplate.queryForObject("SELECT max(id) FROM " + table, Long.class);
+    public Long selectMaxId(String table, String queryCondition) {
+        String sql = "SELECT max(id) FROM " + table;
+        if (StringUtils.isNotBlank(queryCondition)) {
+            sql += " WHERE " + queryCondition;
+        }
+        return jdbcTemplate.queryForObject(sql, Long.class);
     }
+
 }

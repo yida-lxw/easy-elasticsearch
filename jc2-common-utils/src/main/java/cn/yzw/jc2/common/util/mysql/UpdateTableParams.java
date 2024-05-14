@@ -13,40 +13,43 @@ import java.util.List;
  **/
 @Data
 public class UpdateTableParams {
-   /**
+    /**
     * 需要更新的表名,必填
     */
-   private String tableName;
-   /**
+    private String            tableName;
+    /**
     * 起始id，非必填，默认从0开始
     */
-   private Long startId;
+    private Long              startId;
 
-   /**
+    /***
+    * where 查询条件，非必填，不传，就全表扫
+    */
+    private String            queryCondition;
+    /**
     * 需要更新的字段，必填
     */
-   private List<UpdateField> fieldList;
+    private List<UpdateField> fieldList;
 
-   @Data
-   static class UpdateField{
-      /**
-       * 目标字段，必填
-       */
-      private String targetFieldName;
-      /**
-       * 原字段，type=FIELD时，必填
-       */
-      private String originFieldName;
-      /**
-       * FIELD :字段，VALUE:值
-       */
-      private String UpdateFieldType;
-      /**
-       * 目标值：type=VALUE时，必填
-       */
-      private Object targetValue;
+    @Data
+    static class UpdateField {
+        /**
+         * 目标字段，必填
+         */
+        private String targetFieldName;
+        /**
+         * 原字段，type=FIELD时，必填
+         */
+        private String originFieldName;
+        /**
+         * FIELD :字段，VALUE:值
+         */
+        private String UpdateFieldType;
+        /**
+         * 目标值：type=VALUE时，必填
+         */
+        private Object targetValue;
 
-   }
-
+    }
 
 }

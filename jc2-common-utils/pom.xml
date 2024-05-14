@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>jc2-common-utils</artifactId>
-    <version>1.0.1-20240508</version>
+    <version>1.0.1-202405014</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
