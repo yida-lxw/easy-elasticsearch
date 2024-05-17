@@ -94,7 +94,7 @@ public class MysqlTableFieldsUpdateExecute {
                     set = set + updateField.getTargetFieldName() + " = " + updateField.getTargetValue();
                 }
             }
-            if (i < ids.size() - 1) {
+            if (i < updateTableParams.getFieldList().size() - 1) {
                 set += ", ";
             }
         }
