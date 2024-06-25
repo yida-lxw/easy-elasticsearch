@@ -2,10 +2,12 @@ package cn.yzw.jc2.common.retry.service;
 
 
 import cn.yzw.jc2.common.retry.entity.RetryCreateTask;
+import cn.yzw.jc2.common.retry.entity.RetryTaskBizMethodHolder;
 import cn.yzw.jc2.common.retry.entity.RetryTaskDO;
 
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 
 public interface RetryTaskDomainService {
 
@@ -90,4 +92,5 @@ public interface RetryTaskDomainService {
      */
     List<RetryTaskDO> batchQueryByTaskNos(List<String> retryTaskNos);
 
+    ConcurrentMap<String, RetryTaskBizMethodHolder> getBizMethodRegistry();
 }

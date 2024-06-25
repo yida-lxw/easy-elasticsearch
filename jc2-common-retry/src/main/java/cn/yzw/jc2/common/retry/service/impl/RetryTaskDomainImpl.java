@@ -345,4 +345,8 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
         this.applicationContext = applicationContext;
     }
 
+    @Override
+    public ConcurrentMap<String, RetryTaskBizMethodHolder> getBizMethodRegistry() {
+        return bizMethodRegistry;
+    }
 }
