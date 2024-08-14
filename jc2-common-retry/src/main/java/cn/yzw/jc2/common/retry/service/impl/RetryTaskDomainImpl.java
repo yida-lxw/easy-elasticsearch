@@ -1,16 +1,19 @@
 package cn.yzw.jc2.common.retry.service.impl;
 
-import cn.yzw.infra.component.utils.AssertUtils;
-import cn.yzw.jc2.common.retry.config.RetryTaskConfig;
-import cn.yzw.jc2.common.retry.entity.RetryCreateTask;
-import cn.yzw.jc2.common.retry.entity.RetryTaskDO;
-import cn.yzw.jc2.common.retry.enums.RetryTaskPriorityCheckEnums;
-import cn.yzw.jc2.common.retry.enums.RetryTaskStatusEnum;
-import cn.yzw.jc2.common.retry.mapper.RetryTaskMapper;
-import cn.yzw.jc2.common.retry.annotation.RetryTask;
-import cn.yzw.jc2.common.retry.entity.RetryTaskBizMethodHolder;
-import cn.yzw.jc2.common.retry.service.RetryTaskDomainService;
-import lombok.extern.slf4j.Slf4j;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import javax.annotation.Resource;
+
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
@@ -24,18 +27,18 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.MethodIntrospector;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 
-import javax.annotation.Resource;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import cn.yzw.infra.component.utils.AssertUtils;
+import cn.yzw.jc2.common.retry.annotation.RetryTask;
+import cn.yzw.jc2.common.retry.config.RetryTaskConfig;
+import cn.yzw.jc2.common.retry.entity.RetryCreateTask;
+import cn.yzw.jc2.common.retry.entity.RetryTaskBizMethodHolder;
+import cn.yzw.jc2.common.retry.entity.RetryTaskDO;
+import cn.yzw.jc2.common.retry.entity.RetryTaskResult;
+import cn.yzw.jc2.common.retry.enums.RetryTaskPriorityCheckEnums;
+import cn.yzw.jc2.common.retry.enums.RetryTaskStatusEnum;
+import cn.yzw.jc2.common.retry.mapper.RetryTaskMapper;
+import cn.yzw.jc2.common.retry.service.RetryTaskDomainService;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationContextAware,
@@ -217,14 +220,26 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                     AssertUtils.isTrue(validatePrevBizSequenceTask(bizKey, taskDO), "上一优先级的任务未执行成功，本级业务不允许执行");
                     retryTaskMapper.updateExecutingStatusByNo(taskNo, RetryTaskStatusEnum.EXECUTING.name(),
                         retryTaskConfig.getTableName());
+                    Object taskResult;
                     if (methodHolder.isNeedReturnTenantId()) {
-                        methodHolder.getBizMethod().invoke(methodHolder.getTargetService(), taskDO.getTaskData(),
+                        taskResult = methodHolder.getBizMethod().invoke(methodHolder.getTargetService(),
+                            taskDO.getTaskData(),
                             taskDO.getTenantId());
                     } else {
-                        methodHolder.getBizMethod().invoke(methodHolder.getTargetService(), taskDO.getTaskData());
+                        taskResult = methodHolder.getBizMethod().invoke(methodHolder.getTargetService(),
+                            taskDO.getTaskData());
                     }
-                    retryTaskMapper.updateResultStatusByNo(taskNo, RetryTaskStatusEnum.SUCCESS.name(), null,
-                        retryTaskConfig.getTableName());
+                    if (taskResult instanceof RetryTaskResult) {
+                        //有返回值
+                        RetryTaskResult retryTaskResult = (RetryTaskResult) taskResult;
+                        retryTaskMapper.updateResultStatusByNo(taskNo,
+                            retryTaskResult.isSuccess() ? RetryTaskStatusEnum.SUCCESS.name()
+                                : RetryTaskStatusEnum.FAIL.name(),
+                            retryTaskResult.getMsg(), retryTaskConfig.getTableName());
+                    } else {
+                        retryTaskMapper.updateResultStatusByNo(taskNo, RetryTaskStatusEnum.SUCCESS.name(), null,
+                            retryTaskConfig.getTableName());
+                    }
                     log.info("重试任务-成功-执行完成任务！task：{}", taskDO);
                 }
                 return true;
