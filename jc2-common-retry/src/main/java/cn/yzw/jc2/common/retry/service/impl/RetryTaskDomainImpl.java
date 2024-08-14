@@ -26,6 +26,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.MethodIntrospector;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import cn.yzw.infra.component.utils.AssertUtils;
 import cn.yzw.jc2.common.retry.annotation.RetryTask;
@@ -43,20 +44,22 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationContextAware,
                                  SmartInitializingSingleton {
-    private final static String retry_task_EXEC_LOCK_PREFIX = "retry_task_exec_lock_";
+    private final static String                                   retry_task_EXEC_LOCK_PREFIX = "retry_task_exec_lock_";
     private final ConcurrentMap<String, RetryTaskBizMethodHolder> bizMethodRegistry           = new ConcurrentHashMap<>();
     @Resource
-    private RetryTaskMapper     retryTaskMapper;
+    private RetryTaskMapper                                       retryTaskMapper;
 
     @Autowired
-    private RedissonClient      redissonClient;
+    private RedissonClient                                        redissonClient;
 
     @Autowired
     @Qualifier("retryTaskThreadPoolTaskExecutor")
-    private ThreadPoolExecutor  retryTaskThreadPoolTaskExecutor;
+    private ThreadPoolExecutor                                    retryTaskThreadPoolTaskExecutor;
 
     @Autowired
-    private RetryTaskConfig     retryTaskConfig;
+    private RetryTaskConfig                                       retryTaskConfig;
+    @Autowired
+    private TransactionTemplate                                   transactionTemplate;
 
     @Override
     public String createTask(RetryCreateTask createTask) {
@@ -108,12 +111,11 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
 
     @Override
     public List<RetryTaskDO> selectExecutableTask(Date timeOutStartTime, Integer maxRetryTimes, Integer pageSize,
-                                                  Long minId,List<String> includeBizTypes, List<String> excludeBizTypes) {
-        return retryTaskMapper.selectExecutableTask(timeOutStartTime, maxRetryTimes, pageSize, minId,includeBizTypes,excludeBizTypes,
-            retryTaskConfig.getTableName(), retryTaskConfig.getRetryEnvFlag());
+                                                  Long minId, List<String> includeBizTypes,
+                                                  List<String> excludeBizTypes) {
+        return retryTaskMapper.selectExecutableTask(timeOutStartTime, maxRetryTimes, pageSize, minId, includeBizTypes,
+            excludeBizTypes, retryTaskConfig.getTableName(), retryTaskConfig.getRetryEnvFlag());
     }
-
-
 
     @Override
     public int deleteByNo(String retryTaskNo) {
@@ -133,7 +135,8 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
 
     @Override
     public List<RetryTaskDO> selectUnexecutableTask(Integer maxRetryTimes, Integer pageSize) {
-        return retryTaskMapper.selectUnexecutableTask(maxRetryTimes, pageSize, retryTaskConfig.getTableName(),retryTaskConfig.getRetryEnvFlag());
+        return retryTaskMapper.selectUnexecutableTask(maxRetryTimes, pageSize, retryTaskConfig.getTableName(),
+            retryTaskConfig.getRetryEnvFlag());
     }
 
     @Override
@@ -220,29 +223,42 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                     AssertUtils.isTrue(validatePrevBizSequenceTask(bizKey, taskDO), "上一优先级的任务未执行成功，本级业务不允许执行");
                     retryTaskMapper.updateExecutingStatusByNo(taskNo, RetryTaskStatusEnum.EXECUTING.name(),
                         retryTaskConfig.getTableName());
-                    Object taskResult;
-                    if (methodHolder.isNeedReturnTenantId()) {
-                        taskResult = methodHolder.getBizMethod().invoke(methodHolder.getTargetService(),
-                            taskDO.getTaskData(),
-                            taskDO.getTenantId());
-                    } else {
-                        taskResult = methodHolder.getBizMethod().invoke(methodHolder.getTargetService(),
-                            taskDO.getTaskData());
-                    }
-                    if (taskResult instanceof RetryTaskResult) {
-                        //有返回值
-                        RetryTaskResult retryTaskResult = (RetryTaskResult) taskResult;
-                        String msg = retryTaskResult.getMsg();
-                        msg = getMsg(msg);
-                        retryTaskMapper.updateResultStatusByNo(taskNo,
-                            retryTaskResult.isSuccess() ? RetryTaskStatusEnum.SUCCESS.name()
-                                : RetryTaskStatusEnum.FAIL.name(),
-                            msg, retryTaskConfig.getTableName());
-                    } else {
-                        retryTaskMapper.updateResultStatusByNo(taskNo, RetryTaskStatusEnum.SUCCESS.name(), null,
-                            retryTaskConfig.getTableName());
-                    }
-                    log.info("重试任务-成功-执行完成任务！task：{}", taskDO);
+                    RetryTaskDO finalTaskDO = taskDO;
+                    //任务与更新状态在一个事务里执行
+                    transactionTemplate.execute(s -> {
+                        Object taskResult;
+                        try {
+                            if (methodHolder.isNeedReturnTenantId()) {
+                                taskResult = methodHolder.getBizMethod().invoke(methodHolder.getTargetService(),
+                                    finalTaskDO.getTaskData(), finalTaskDO.getTenantId());
+                            } else {
+                                taskResult = methodHolder.getBizMethod().invoke(methodHolder.getTargetService(),
+                                    finalTaskDO.getTaskData());
+                            }
+                            if (taskResult instanceof RetryTaskResult) {
+                                //有返回值
+                                RetryTaskResult retryTaskResult = (RetryTaskResult) taskResult;
+                                String msg = retryTaskResult.getMsg();
+                                msg = getMsg(msg);
+                                retryTaskMapper.updateResultStatusByNo(taskNo,
+                                    retryTaskResult.isSuccess() ? RetryTaskStatusEnum.SUCCESS.name()
+                                        : RetryTaskStatusEnum.FAIL.name(),
+                                    msg, retryTaskConfig.getTableName());
+                            } else {
+                                retryTaskMapper.updateResultStatusByNo(taskNo, RetryTaskStatusEnum.SUCCESS.name(), null,
+                                    retryTaskConfig.getTableName());
+                            }
+                        } catch (Exception e) {
+                            String msg = e.getMessage();
+                            if (msg == null) {
+                                msg = ((InvocationTargetException) e).getTargetException().getMessage();
+                            }
+                            log.error("重试任务-执行异常，retry_task_no：{}, task：{}", taskNo, finalTaskDO, e);
+                            throw new RuntimeException(msg, e);
+                        }
+                        log.info("重试任务-成功-执行完成任务！task：{}", finalTaskDO);
+                        return true;
+                    });
                 }
                 return true;
             } else {
@@ -252,9 +268,6 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
         } catch (Exception e) {
             log.error("重试任务-执行异常，retry_task_no：{}, task：{}", taskNo, taskDO, e);
             String msg = e.getMessage();
-            if (e instanceof InvocationTargetException) {
-                msg = ((InvocationTargetException) e).getTargetException().getMessage();
-            }
             msg = getMsg(msg);
             if (taskDO != null) {
                 retryTaskMapper.updateResultStatusByNo(taskNo, RetryTaskStatusEnum.FAIL.name(),
@@ -312,8 +325,6 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
         initBizMethodRegistry(this.applicationContext);
     }
 
-
-
     private void initBizMethodRegistry(ApplicationContext applicationContext) {
         if (applicationContext == null) {
             return;
@@ -347,12 +358,12 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                 if (this.bizMethodRegistry.containsKey(bizKey)) {
                     throw new RuntimeException("retryTask biz method[" + bizKey + "] naming conflicts.");
                 }
-//                if (!(method.getParameterTypes().length == 1
-//                      && method.getParameterTypes()[0].isAssignableFrom(String.class))) {
-//                    throw new RuntimeException("retryTask biz method param-classtype invalid, for[" + bean.getClass()
-//                                               + "#" + method.getName() + "] , "
-//                                               + "The correct method format like \" public void bizMethod(String param) \" .");
-//                }
+                //                if (!(method.getParameterTypes().length == 1
+                //                      && method.getParameterTypes()[0].isAssignableFrom(String.class))) {
+                //                    throw new RuntimeException("retryTask biz method param-classtype invalid, for[" + bean.getClass()
+                //                                               + "#" + method.getName() + "] , "
+                //                                               + "The correct method format like \" public void bizMethod(String param) \" .");
+                //                }
                 method.setAccessible(true);
                 bizMethodRegistry.put(bizKey, RetryTaskBizMethodHolder.builder().targetService(bean).bizMethod(method)
                     .lockSeconds(lockSeconds).needReturnTenantId(retryTask.needReturnTenantId()).build());
