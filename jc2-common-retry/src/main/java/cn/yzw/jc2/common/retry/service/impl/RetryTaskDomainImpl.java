@@ -232,10 +232,12 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                     if (taskResult instanceof RetryTaskResult) {
                         //有返回值
                         RetryTaskResult retryTaskResult = (RetryTaskResult) taskResult;
+                        String msg = retryTaskResult.getMsg();
+                        msg = getMsg(msg);
                         retryTaskMapper.updateResultStatusByNo(taskNo,
                             retryTaskResult.isSuccess() ? RetryTaskStatusEnum.SUCCESS.name()
                                 : RetryTaskStatusEnum.FAIL.name(),
-                            retryTaskResult.getMsg(), retryTaskConfig.getTableName());
+                            msg, retryTaskConfig.getTableName());
                     } else {
                         retryTaskMapper.updateResultStatusByNo(taskNo, RetryTaskStatusEnum.SUCCESS.name(), null,
                             retryTaskConfig.getTableName());
@@ -253,9 +255,7 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
             if (e instanceof InvocationTargetException) {
                 msg = ((InvocationTargetException) e).getTargetException().getMessage();
             }
-            if (msg != null && msg.length() > 500) {
-                msg = msg.substring(0, 500);
-            }
+            msg = getMsg(msg);
             if (taskDO != null) {
                 retryTaskMapper.updateResultStatusByNo(taskNo, RetryTaskStatusEnum.FAIL.name(),
                     StringUtils.isBlank(msg) ? "空指针了！！！" : msg,
@@ -267,6 +267,13 @@ public class RetryTaskDomainImpl implements RetryTaskDomainService, ApplicationC
                 lock.unlock();
             }
         }
+    }
+
+    private static String getMsg(String msg) {
+        if (msg != null && msg.length() > 500) {
+            msg = msg.substring(0, 500);
+        }
+        return msg;
     }
 
     /**
