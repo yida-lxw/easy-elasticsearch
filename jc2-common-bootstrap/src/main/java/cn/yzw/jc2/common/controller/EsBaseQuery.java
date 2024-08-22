@@ -1,14 +1,14 @@
 package cn.yzw.jc2.common.controller;
 
+import java.io.Serializable;
+import java.util.List;
+
 import cn.yzw.jc2.common.search.annotation.EsEquals;
-import cn.yzw.jc2.common.search.annotation.EsHasParentRelation;
 import cn.yzw.jc2.common.search.annotation.EsLike;
 import cn.yzw.jc2.common.search.annotation.EsMulti;
 import cn.yzw.jc2.common.search.annotation.EsRange;
+import cn.yzw.jc2.common.search.request.EsSearchBase;
 import lombok.Data;
-
-import java.io.Serializable;
-import java.util.List;
 
 /**
  * es查询基类
@@ -18,7 +18,7 @@ import java.util.List;
  * @date: 2022-08-11 20:24
  */
 @Data
-public class EsBaseQuery implements Serializable {
+public class EsBaseQuery extends EsSearchBase implements Serializable {
 
     /**
      * 同主UK
@@ -68,6 +68,6 @@ public class EsBaseQuery implements Serializable {
     @EsRange(name = "createTime", lt = true, includeUpper = true)
     private Long                  createTimeEnd;
 
-
+    @EsMulti
     private EsOrgMultiQuery       esOrgMultiQuery;
 }

@@ -1,12 +1,12 @@
 package cn.yzw.jc2.common.search.request;
 
-import lombok.Builder;
-import lombok.Data;
-import org.elasticsearch.index.query.QueryBuilder;
-
 import java.io.Serializable;
 import java.util.List;
 import java.util.function.Supplier;
+
+import org.elasticsearch.index.query.QueryBuilder;
+
+import lombok.Data;
 
 /**
  * @Description: 请求基类

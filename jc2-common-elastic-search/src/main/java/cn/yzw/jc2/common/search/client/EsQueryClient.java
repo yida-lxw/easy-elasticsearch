@@ -1,16 +1,15 @@
 package cn.yzw.jc2.common.search.client;
 
-import cn.yzw.infra.component.utils.AssertUtils;
-import cn.yzw.jc2.common.search.parse.EsQueryParse;
-import cn.yzw.jc2.common.search.parse.EsQueryResultParse;
-import cn.yzw.jc2.common.search.request.ScrollRequest;
-import cn.yzw.jc2.common.search.request.SearchPageRequest;
-import cn.yzw.jc2.common.search.result.EsAggregationResult;
-import cn.yzw.jc2.common.search.result.ScrollResult;
-import cn.yzw.jc2.common.search.request.SearchAfterRequest;
-import cn.yzw.jc2.common.search.result.SearchAfterResult;
-import cn.yzw.jc2.common.search.result.SearchPageResult;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.annotation.Resource;
+
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -20,18 +19,22 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StopWatch;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import cn.yzw.infra.component.utils.AssertUtils;
+import cn.yzw.jc2.common.search.parse.EsQueryParse;
+import cn.yzw.jc2.common.search.parse.EsQueryResultParse;
+import cn.yzw.jc2.common.search.request.EsSearchBase;
+import cn.yzw.jc2.common.search.request.ScrollRequest;
+import cn.yzw.jc2.common.search.request.SearchAfterRequest;
+import cn.yzw.jc2.common.search.request.SearchPageRequest;
+import cn.yzw.jc2.common.search.result.EsAggregationResult;
+import cn.yzw.jc2.common.search.result.ScrollResult;
+import cn.yzw.jc2.common.search.result.SearchAfterResult;
+import cn.yzw.jc2.common.search.result.SearchPageResult;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * es查询客户端
@@ -54,7 +57,7 @@ public class EsQueryClient {
     @Value("#{${es.query.sleep.index.config:{}}}")
     private Map<String, Long>   esIndexSleepConfigMap = new HashMap<>();
 
-    @Autowired
+    @Resource
     private RestHighLevelClient restHighLevelClient;
 
     /**
@@ -120,7 +123,8 @@ public class EsQueryClient {
      *  @Date:  2023/4/6 20:24
      *  @param:oclass 出参类型
      */
-    public <E, O> SearchAfterResult<O> searchAfter(SearchAfterRequest<E> request, Class<O> oclass) {
+    public <E, O> SearchAfterResult<O> searchAfter(SearchAfterRequest<E> request,
+                                                                        Class<O> oclass) {
 
         SearchAfterResult<O> pageResult = new SearchAfterResult<>();
         StopWatch stopWatch = new StopWatch();

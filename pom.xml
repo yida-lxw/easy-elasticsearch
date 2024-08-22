@@ -23,7 +23,7 @@
     <properties>
         <java.version>1.8</java.version>
         <spring.boot.version>2.3.5.RELEASE</spring.boot.version>
-        <jc2.common.elastic.search.version>1.0.0-SNAPSHOT</jc2.common.elastic.search.version>
+        <jc2.common.elastic.search.version>1.0.20240822-SNAPSHOT</jc2.common.elastic.search.version>
         <jc2.common.utils.version>1.0.0-SNAPSHOT</jc2.common.utils.version>
         <jc2.common.dmigrate.version>1.0.0-SNAPSHOT</jc2.common.dmigrate.version>
         <jc2.common.retry.version>1.0.0</jc2.common.retry.version>

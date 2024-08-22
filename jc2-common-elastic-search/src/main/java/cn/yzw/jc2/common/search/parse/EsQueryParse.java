@@ -1,38 +1,5 @@
 package cn.yzw.jc2.common.search.parse;
 
-import cn.yzw.infra.component.utils.JsonUtils;
-import cn.yzw.infra.component.utils.SpringContextUtils;
-import cn.yzw.jc2.common.search.annotation.EsHasChildRelation;
-import cn.yzw.jc2.common.search.annotation.EsHasParentRelation;
-import cn.yzw.jc2.common.search.annotation.EsMatch;
-import cn.yzw.jc2.common.search.annotation.EsMatchPhrase;
-import cn.yzw.jc2.common.search.annotation.agg.EsAggNested;
-import cn.yzw.jc2.common.search.annotation.agg.EsAggTerms;
-import cn.yzw.jc2.common.search.annotation.agg.EsAggs;
-import cn.yzw.jc2.common.search.annotation.agg.EsAvg;
-import cn.yzw.jc2.common.search.annotation.agg.EsCardinality;
-import cn.yzw.jc2.common.search.annotation.agg.EsCount;
-import cn.yzw.jc2.common.search.annotation.agg.EsFilter;
-import cn.yzw.jc2.common.search.annotation.agg.EsMax;
-import cn.yzw.jc2.common.search.annotation.agg.EsMin;
-import cn.yzw.jc2.common.search.annotation.agg.EsSum;
-import cn.yzw.jc2.common.search.client.EsQueryClient;
-import cn.yzw.jc2.common.search.request.Order;
-import cn.yzw.jc2.common.search.request.ScrollRequest;
-import cn.yzw.jc2.common.search.request.SearchPageRequest;
-import cn.yzw.jc2.common.search.request.SearchBaseRequest;
-import cn.yzw.jc2.common.search.annotation.EsEquals;
-import cn.yzw.jc2.common.search.annotation.EsIn;
-import cn.yzw.jc2.common.search.annotation.EsNotEquals;
-import cn.yzw.jc2.common.search.annotation.EsNotLike;
-import cn.yzw.jc2.common.search.annotation.EsNotNull;
-import cn.yzw.jc2.common.search.annotation.EsRange;
-import cn.yzw.jc2.common.search.annotation.EsLike;
-import cn.yzw.jc2.common.search.annotation.EsMulti;
-import cn.yzw.jc2.common.search.annotation.EsNested;
-import cn.yzw.jc2.common.search.annotation.EsNotNullFields;
-import cn.yzw.jc2.common.search.request.SearchAfterRequest;
-import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -94,6 +61,19 @@ import cn.yzw.jc2.common.search.annotation.EsNotLike;
 import cn.yzw.jc2.common.search.annotation.EsNotNull;
 import cn.yzw.jc2.common.search.annotation.EsNotNullFields;
 import cn.yzw.jc2.common.search.annotation.EsRange;
+import cn.yzw.jc2.common.search.annotation.agg.EsAggNested;
+import cn.yzw.jc2.common.search.annotation.agg.EsAggTerms;
+import cn.yzw.jc2.common.search.annotation.agg.EsAggs;
+import cn.yzw.jc2.common.search.annotation.agg.EsAvg;
+import cn.yzw.jc2.common.search.annotation.agg.EsCardinality;
+import cn.yzw.jc2.common.search.annotation.agg.EsCount;
+import cn.yzw.jc2.common.search.annotation.agg.EsFilter;
+import cn.yzw.jc2.common.search.annotation.agg.EsMax;
+import cn.yzw.jc2.common.search.annotation.agg.EsMin;
+import cn.yzw.jc2.common.search.annotation.agg.EsSum;
+import cn.yzw.jc2.common.search.client.EsQueryClient;
+import cn.yzw.jc2.common.search.enums.EsSearchTypeEnum;
+import cn.yzw.jc2.common.search.request.EsSearchBase;
 import cn.yzw.jc2.common.search.request.Order;
 import cn.yzw.jc2.common.search.request.ScrollRequest;
 import cn.yzw.jc2.common.search.request.SearchAfterRequest;
@@ -113,14 +93,13 @@ public class EsQueryParse {
     private EsQueryParse() {
     }
 
-    public static SearchRequest convert2EsPageQuery(SearchPageRequest request) {
+    public static <E> SearchRequest convert2EsPageQuery(SearchPageRequest<E> request) {
 
         //构建查询
         SearchSourceBuilder sourceBuilder = buildBoolQueryBuilder(request);
         // 设置分页
         sourceBuilder.from((request.getPageNum() - 1) * request.getPageSize());
         sourceBuilder.size(request.getPageSize());
-
         // 设置返回真实总数
         if (request.getPageSize() > 0) {
             sourceBuilder.trackTotalHits(true);
@@ -490,16 +469,16 @@ public class EsQueryParse {
         } catch (Exception e) {
             log.warn("ES查询解析异常", e);
         }
-
+        boolQueryBuilderDynamicFields(object, boolQueryBuilder);
         //父子文档直接打在类上
-        BoolQueryBuilder boolQueryBuilderTop = null;
-        if (object != null && object.getClass().isAnnotationPresent(EsHasChildRelation.class)) {
+        BoolQueryBuilder boolQueryBuilderTop;
+        if (object.getClass().isAnnotationPresent(EsHasChildRelation.class)) {
             // 外面再包裹一层query
             boolQueryBuilderTop = QueryBuilders.boolQuery();
             HasChildQueryBuilder hashChildQuery = getHasChildQueryBuilder(
                     object.getClass().getAnnotation(EsHasChildRelation.class), boolQueryBuilder);
             boolQueryBuilderTop.filter(hashChildQuery);
-        } else if (object != null && object.getClass().isAnnotationPresent(EsHasParentRelation.class)) {
+        } else if (object.getClass().isAnnotationPresent(EsHasParentRelation.class)) {
             // 外面再包裹一层query
             boolQueryBuilderTop = QueryBuilders.boolQuery();
             EsHasParentRelation relation = object.getClass().getAnnotation(EsHasParentRelation.class);
@@ -510,6 +489,67 @@ public class EsQueryParse {
             boolQueryBuilderTop = boolQueryBuilder;
         }
         return boolQueryBuilderTop;
+    }
+
+    private static void boolQueryBuilderDynamicFields(Object object, BoolQueryBuilder boolQueryBuilder) {
+        if (object instanceof EsSearchBase) {
+            EsSearchBase esSearchBase = (EsSearchBase) object;
+            if (esSearchBase.getDynamicFieldsMap() != null) {
+                esSearchBase.getDynamicFieldsMap().forEach((k, v) -> {
+                    String searchType = v.getSearchType();
+                    if (StringUtils.isBlank(searchType)) {
+                        throw new IllegalArgumentException(String.format("搜索字段【%s】搜索类型不能为空", k));
+                    }
+
+                    if (EsSearchTypeEnum.esEquals.name().equals(searchType) && v.getValue() != null) {
+                        TermQueryBuilder query = QueryBuilders.termQuery(k, v.getValue());
+                        boolQueryBuilder.filter(query);
+
+                    } else if (EsSearchTypeEnum.esIn.name().equals(searchType)
+                               && CollectionUtils.isNotEmpty(v.getValueList())) {
+                        QueryBuilder query = QueryBuilders.termsQuery(k, v.getValueList());
+                        boolQueryBuilder.filter(query);
+
+                    } else if (EsSearchTypeEnum.esLike.name().equals(searchType) && v.getValue() != null) {
+                        String val = wildcardOptimize(v.getValue().toString());
+                        WildcardQueryBuilder query = QueryBuilders.wildcardQuery(k, "*" + val + "*");
+                        boolQueryBuilder.filter(query);
+
+                    } else if (EsSearchTypeEnum.esNotLike.name().equals(searchType) && v.getValue() != null) {
+                        String val = wildcardOptimize(v.getValue().toString());
+                        BoolQueryBuilder wildcardBoolQueryBuilder = QueryBuilders.boolQuery();
+                        BoolQueryBuilder query = wildcardBoolQueryBuilder.mustNot(QueryBuilders.wildcardQuery(k, val));
+                        boolQueryBuilder.filter(query);
+
+                    } else if (EsSearchTypeEnum.esRange.name().equals(searchType)) {
+                        if (v.getStartValue() == null && v.getEndValue() == null) {
+                            return;
+                        }
+                        RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(k);
+                        if (v.getStartValue() != null) {
+                            rangeQueryBuilder.lt(v.getStartValue())
+                                .includeLower(Boolean.TRUE.equals(v.getIncludeLower()));
+                        }
+                        if (v.getEndValue() != null) {
+                            rangeQueryBuilder.gt(v.getEndValue())
+                                .includeUpper(Boolean.TRUE.equals(v.getIncludeUpper()));
+                        }
+                        boolQueryBuilder.filter(rangeQueryBuilder);
+
+                    } else if (EsSearchTypeEnum.esIsNull.name().equals(searchType)) {
+                        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+                        boolQueryBuilder.filter(boolQuery.mustNot(QueryBuilders.existsQuery(k)));
+
+                    } else if (EsSearchTypeEnum.esIsNotNull.name().equals(searchType)) {
+                        ExistsQueryBuilder existsQueryBuilder = QueryBuilders.existsQuery(k);
+                        boolQueryBuilder.filter(existsQueryBuilder);
+
+                    } else {
+                        throw new IllegalArgumentException(String.format("搜索字段【%s】搜索类型【%s】不能识别", k, searchType));
+                    }
+                });
+            }
+        }
     }
 
     private static String wildcardOptimize(String value) {

@@ -4,7 +4,6 @@ import java.io.Serializable;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 /**
  * elasticsearch专用分页，request，支持深度下一页
