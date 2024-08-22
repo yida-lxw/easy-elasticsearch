@@ -70,22 +70,7 @@ public class EsQueryClient {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         try {
-            if (Boolean.TRUE.equals(request.getSleep())) {
-                try {
-                    Thread.sleep(esQuerySleepMs);
-                } catch (InterruptedException e) {
-                    log.warn("sleep failed");
-                }
-            } else {
-                if (esIndexSleepConfigMap.containsKey(request.getIndex())) {
-                    try {
-                        Long time = esIndexSleepConfigMap.get(request.getIndex());
-                        Thread.sleep(time == null ? esQuerySleepMs : time);
-                    } catch (InterruptedException e) {
-                        log.warn("sleep failed");
-                    }
-                }
-            }
+            sleep(request);
             AssertUtils.isTrue(request.getPageNum() * request.getPageSize() <= esQueryMaxSize,
                 "仅支持查询前" + esQueryMaxSize + "条, 请增加查询条件缩小范围");
 
@@ -109,12 +94,21 @@ public class EsQueryClient {
         return pageResult;
     }
 
-    private <E> void sleep(Boolean request) {
-        if (Boolean.TRUE.equals(request)) {
+    private <E> void sleep(SearchPageRequest<E> request) {
+        if (Boolean.TRUE.equals(request.getSleep())) {
             try {
                 Thread.sleep(esQuerySleepMs);
             } catch (InterruptedException e) {
                 log.warn("sleep failed");
+            }
+        } else {
+            if (esIndexSleepConfigMap.containsKey(request.getIndex())) {
+                try {
+                    Long time = esIndexSleepConfigMap.get(request.getIndex());
+                    Thread.sleep(time == null ? esQuerySleepMs : time);
+                } catch (InterruptedException e) {
+                    log.warn("sleep failed");
+                }
             }
         }
     }
