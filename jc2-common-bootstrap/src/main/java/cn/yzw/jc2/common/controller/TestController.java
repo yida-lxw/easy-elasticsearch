@@ -4,12 +4,14 @@ import cn.yzw.infra.component.utils.JsonUtils;
 import cn.yzw.jc2.common.search.client.EsQueryClient;
 import cn.yzw.jc2.common.search.request.SearchAfterRequest;
 import cn.yzw.jc2.common.search.request.SearchPageRequest;
+import cn.yzw.jc2.common.search.result.EsAggregationResult;
 import cn.yzw.jc2.common.search.result.SearchAfterResult;
 import cn.yzw.jc2.common.search.result.SearchPageResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -63,5 +65,15 @@ public class TestController {
         SearchPageResult<Map> afterResult = esQueryService.search(request, Map.class);
 
         return JsonUtils.writeAsJson(afterResult);
+    }
+
+    @GetMapping("/rest/agg")
+    public String agg() {
+        SearchPageRequest<Object> request = new SearchPageRequest<>();
+        EsAggBaseQuery query = new EsAggBaseQuery();
+        request.setParam(query);
+        request.setIndex("idx_ppls_plan_monthly_info_qa");
+
+        return JsonUtils.writeAsJson(esQueryService.agg(request));
     }
 }

@@ -1,5 +1,38 @@
-package cn.yzw.jc2.common.search.client;
+package cn.yzw.jc2.common.search.parse;
 
+import cn.yzw.infra.component.utils.JsonUtils;
+import cn.yzw.infra.component.utils.SpringContextUtils;
+import cn.yzw.jc2.common.search.annotation.EsHasChildRelation;
+import cn.yzw.jc2.common.search.annotation.EsHasParentRelation;
+import cn.yzw.jc2.common.search.annotation.EsMatch;
+import cn.yzw.jc2.common.search.annotation.EsMatchPhrase;
+import cn.yzw.jc2.common.search.annotation.agg.EsAggNested;
+import cn.yzw.jc2.common.search.annotation.agg.EsAggTerms;
+import cn.yzw.jc2.common.search.annotation.agg.EsAggs;
+import cn.yzw.jc2.common.search.annotation.agg.EsAvg;
+import cn.yzw.jc2.common.search.annotation.agg.EsCardinality;
+import cn.yzw.jc2.common.search.annotation.agg.EsCount;
+import cn.yzw.jc2.common.search.annotation.agg.EsFilter;
+import cn.yzw.jc2.common.search.annotation.agg.EsMax;
+import cn.yzw.jc2.common.search.annotation.agg.EsMin;
+import cn.yzw.jc2.common.search.annotation.agg.EsSum;
+import cn.yzw.jc2.common.search.client.EsQueryClient;
+import cn.yzw.jc2.common.search.request.Order;
+import cn.yzw.jc2.common.search.request.ScrollRequest;
+import cn.yzw.jc2.common.search.request.SearchPageRequest;
+import cn.yzw.jc2.common.search.request.SearchBaseRequest;
+import cn.yzw.jc2.common.search.annotation.EsEquals;
+import cn.yzw.jc2.common.search.annotation.EsIn;
+import cn.yzw.jc2.common.search.annotation.EsNotEquals;
+import cn.yzw.jc2.common.search.annotation.EsNotLike;
+import cn.yzw.jc2.common.search.annotation.EsNotNull;
+import cn.yzw.jc2.common.search.annotation.EsRange;
+import cn.yzw.jc2.common.search.annotation.EsLike;
+import cn.yzw.jc2.common.search.annotation.EsMulti;
+import cn.yzw.jc2.common.search.annotation.EsNested;
+import cn.yzw.jc2.common.search.annotation.EsNotNullFields;
+import cn.yzw.jc2.common.search.request.SearchAfterRequest;
+import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +62,17 @@ import org.elasticsearch.index.query.WildcardQueryBuilder;
 import org.elasticsearch.join.query.HasChildQueryBuilder;
 import org.elasticsearch.join.query.HasParentQueryBuilder;
 import org.elasticsearch.search.Scroll;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.AvgAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.CardinalityAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.MaxAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.MinAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.ValueCountAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -152,6 +196,8 @@ public class EsQueryParse {
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         BoolQueryBuilder boolQueryBuilder = buildBoolQueryBuilder(requestParam.getParam(), sourceBuilder,
                 requestParam.getCustomQueries());
+        //处理聚合
+        buildAggBuilder(requestParam.getParam(), sourceBuilder);
         //增加租户处理
         if (requestParam.getDealTenant()
                 && StringUtils.isNotBlank(requestParam.getTenantId())) {
@@ -171,6 +217,7 @@ public class EsQueryParse {
         setSortFields(requestParam.getOrderByFieldList(), sourceBuilder);
         return sourceBuilder;
     }
+
 
     private static <T> BoolQueryBuilder buildBoolQueryBuilder(T request, SearchSourceBuilder sourceBuilder,
                                                               Supplier<QueryBuilder>[] customQueries) {
@@ -205,6 +252,119 @@ public class EsQueryParse {
             for (Order order : orderList) {
                 sourceBuilder.sort(order.getOrderByField(), SortOrder.fromString(order.getOrderType()));
             }
+        }
+    }
+
+    private static <T> void buildAggBuilder(T request, SearchSourceBuilder sourceBuilder) {
+        if (request == null) {
+            return;
+        }
+        getAggBuilder(request, null, sourceBuilder, null);
+    }
+
+    private static <T> void getAggBuilder(T object, String nestedPath, SearchSourceBuilder sourceBuilder,
+                                          AggregationBuilder aggregation) {
+        Class<?> clazz = object.getClass();
+        List<Field> fields = new ArrayList<>();
+        while (clazz != null) {
+            //当父类为null的时候说明到达了最上层的父类(Object类).
+            fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
+            //得到父类,然后赋给自己
+            clazz = clazz.getSuperclass();
+        }
+        nestedPath = nestedPath == null ? "" : nestedPath;
+        try {
+            for (Field field : fields) {
+                if ("serialVersionUID".equals(field.getName())) {
+                    continue;
+                }
+                Object value = ClassUtils.getPublicMethod(object.getClass(), "get" + captureName(field.getName()))
+                    .invoke(object);
+
+                try {
+                    if (field.isAnnotationPresent(EsAggs.class)) {
+                        if (value == null || field.getType() == String.class && StringUtils.isBlank((String) value)) {
+                            continue;
+                        }
+                        getAggBuilder(value, nestedPath, sourceBuilder, aggregation);
+                    }
+                    if (field.isAnnotationPresent(EsFilter.class)) {
+                        if (value == null || field.getType() == String.class && StringUtils.isBlank((String) value)) {
+                            continue;
+                        }
+                        EsFilter filter = field.getAnnotation(EsFilter.class);
+                        FilterAggregationBuilder builder = AggregationBuilders
+                            .filter(getFiledName(field, filter.name(), nestedPath), getBoolQueryBuilder(value));
+                        setBuilder(nestedPath, sourceBuilder, aggregation, value, false, builder);
+                    }
+                    if (field.isAnnotationPresent(EsSum.class)) {
+                        EsSum annotation = field.getAnnotation(EsSum.class);
+                        SumAggregationBuilder builder = AggregationBuilders.sum(annotation.aggName())
+                            .field(getFiledName(field, annotation.name(), nestedPath));
+                        setBuilder(nestedPath, sourceBuilder, aggregation, value, false, builder);
+                    }
+                    if (field.isAnnotationPresent(EsAvg.class)) {
+                        EsAvg annotation = field.getAnnotation(EsAvg.class);
+                        AvgAggregationBuilder builder = AggregationBuilders.avg(annotation.aggName())
+                            .field(getFiledName(field, annotation.name(), nestedPath));
+                        setBuilder(nestedPath, sourceBuilder, aggregation, value, false, builder);
+                    }
+                    if (field.isAnnotationPresent(EsCount.class)) {
+                        EsCount annotation = field.getAnnotation(EsCount.class);
+                        ValueCountAggregationBuilder builder = AggregationBuilders.count(annotation.aggName())
+                            .field(getFiledName(field, annotation.name(), nestedPath));
+                        setBuilder(nestedPath, sourceBuilder, aggregation, value, false, builder);
+                    }
+                    if (field.isAnnotationPresent(EsCardinality.class)) {
+                        EsCardinality annotation = field.getAnnotation(EsCardinality.class);
+                        CardinalityAggregationBuilder builder = AggregationBuilders.cardinality(annotation.aggName())
+                            .field(getFiledName(field, annotation.name(), nestedPath));
+                        setBuilder(nestedPath, sourceBuilder, aggregation, value, false, builder);
+                    }
+                    if (field.isAnnotationPresent(EsMax.class)) {
+                        EsMax annotation = field.getAnnotation(EsMax.class);
+                        MaxAggregationBuilder builder = AggregationBuilders.max(annotation.aggName())
+                            .field(getFiledName(field, annotation.name(), nestedPath));
+                        setBuilder(nestedPath, sourceBuilder, aggregation, value, false, builder);
+                    }
+                    if (field.isAnnotationPresent(EsMin.class)) {
+                        EsMin annotation = field.getAnnotation(EsMin.class);
+                        MinAggregationBuilder builder = AggregationBuilders.min(annotation.aggName())
+                            .field(getFiledName(field, annotation.name(), nestedPath));
+                        setBuilder(nestedPath, sourceBuilder, aggregation, value, false, builder);
+                    }
+                    if (field.isAnnotationPresent(EsAggTerms.class)) {
+                        EsAggTerms annotation = field.getAnnotation(EsAggTerms.class);
+                        TermsAggregationBuilder builder = AggregationBuilders.terms(annotation.aggName())
+                            .field(getFiledName(field, annotation.name(), nestedPath)).size(annotation.size());
+                        setBuilder(nestedPath, sourceBuilder, aggregation, value, annotation.hasSubAgg(), builder);
+                    }
+                    if (field.isAnnotationPresent(EsAggNested.class)) {
+                        EsAggNested annotation = field.getAnnotation(EsAggNested.class);
+                        String nestPath = getFiledName(field, annotation.name(), nestedPath);
+                        NestedAggregationBuilder builder = AggregationBuilders.nested(annotation.aggName(), nestPath);
+                        setBuilder(nestPath, sourceBuilder, aggregation, value, true, builder);
+                    }
+
+                } catch (Exception e) {
+                    log.warn("ES查询解析异常1: ", e);
+                }
+
+            }
+        } catch (Exception e) {
+            log.warn("ES查询解析异常", e);
+        }
+    }
+
+    private static void setBuilder(String nestedPath, SearchSourceBuilder sourceBuilder, AggregationBuilder aggregation,
+                                   Object value, boolean hasSubAgg, AggregationBuilder subBuilder) {
+        if (hasSubAgg) {
+            getAggBuilder(value, nestedPath, sourceBuilder, subBuilder);
+        }
+        if (aggregation != null) {
+            aggregation.subAggregation(subBuilder);
+        } else {
+            sourceBuilder.aggregation(subBuilder);
         }
     }
 
