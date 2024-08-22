@@ -518,7 +518,8 @@ public class EsQueryParse {
                     } else if (EsSearchTypeEnum.esNotLike.name().equals(searchType) && v.getValue() != null) {
                         String val = wildcardOptimize(v.getValue().toString());
                         BoolQueryBuilder wildcardBoolQueryBuilder = QueryBuilders.boolQuery();
-                        BoolQueryBuilder query = wildcardBoolQueryBuilder.mustNot(QueryBuilders.wildcardQuery(k, val));
+                        BoolQueryBuilder query = wildcardBoolQueryBuilder
+                            .mustNot(QueryBuilders.wildcardQuery(k, "*" + val + "*"));
                         boolQueryBuilder.filter(query);
 
                     } else if (EsSearchTypeEnum.esRange.name().equals(searchType)) {
