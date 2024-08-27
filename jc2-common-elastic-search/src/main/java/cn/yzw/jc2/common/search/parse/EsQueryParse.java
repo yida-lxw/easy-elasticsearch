@@ -528,11 +528,11 @@ public class EsQueryParse {
                         }
                         RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(k);
                         if (v.getStartValue() != null) {
-                            rangeQueryBuilder.lt(v.getStartValue())
+                            rangeQueryBuilder.from(v.getStartValue())
                                 .includeLower(Boolean.TRUE.equals(v.getIncludeLower()));
                         }
                         if (v.getEndValue() != null) {
-                            rangeQueryBuilder.gt(v.getEndValue())
+                            rangeQueryBuilder.to(v.getEndValue())
                                 .includeUpper(Boolean.TRUE.equals(v.getIncludeUpper()));
                         }
                         boolQueryBuilder.filter(rangeQueryBuilder);
