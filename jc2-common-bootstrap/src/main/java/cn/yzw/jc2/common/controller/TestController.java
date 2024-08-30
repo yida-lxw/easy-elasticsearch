@@ -1,5 +1,6 @@
 package cn.yzw.jc2.common.controller;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +56,7 @@ public class TestController {
         orgMultiQuery.setOrgCode("10001");
         orgMultiQuery.setOrgCodeContainSub("10001");
 //        query.setEsOrgMultiQuery(orgMultiQuery);
+        query.setDynamicFieldsMap(new HashMap<>());
         DynamicSearchField field=new DynamicSearchField();
         field.setSearchType(EsSearchTypeEnum.esLike.name());
         field.setValue("门窗");
