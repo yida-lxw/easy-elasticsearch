@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.join.ScoreMode;
@@ -529,11 +530,11 @@ public class EsQueryParse {
                         RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(k);
                         if (v.getStartValue() != null) {
                             rangeQueryBuilder.from(v.getStartValue())
-                                .includeLower(Boolean.TRUE.equals(v.getIncludeLower()));
+                                .includeLower(BooleanUtils.isNotFalse(v.getIncludeLower()));
                         }
                         if (v.getEndValue() != null) {
                             rangeQueryBuilder.to(v.getEndValue())
-                                .includeUpper(Boolean.TRUE.equals(v.getIncludeUpper()));
+                                .includeUpper(BooleanUtils.isNotFalse(v.getIncludeLower()));
                         }
                         boolQueryBuilder.filter(rangeQueryBuilder);
 
