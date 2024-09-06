@@ -6,9 +6,17 @@ public enum EsSearchTypeEnum {
      */
     esEquals,
     /**
+     * 不等于
+     */
+    esNotEquals,
+    /**
      * 多值精确匹配
      */
     esIn,
+    /**
+     * 多值，not in
+     */
+    esNotIn,
     /**
      * 模糊搜索
      */

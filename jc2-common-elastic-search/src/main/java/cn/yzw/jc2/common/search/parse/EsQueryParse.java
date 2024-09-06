@@ -399,18 +399,16 @@ public class EsQueryParse {
                         }
                         if (field.isAnnotationPresent(EsNotLike.class)) {
                             String val = wildcardOptimize((String) value);
-                            BoolQueryBuilder query = getNotLikeQuery(field, val, nestedPath);
-                            boolQueryBuilder.filter(query);
+                            WildcardQueryBuilder notLikeQuery = getNotLikeQuery(field, val, nestedPath);
+                            boolQueryBuilder.mustNot().add(notLikeQuery);
                         }
                         if (field.isAnnotationPresent(EsEquals.class)) {
                             TermQueryBuilder query = getEqualsQuery(field, value, nestedPath);
-
                             boolQueryBuilder.filter(query);
                         }
                         if (field.isAnnotationPresent(EsNotEquals.class)) {
-                            BoolQueryBuilder query = getNotEqualsQuery(field, value, nestedPath);
-                            boolQueryBuilder.filter(query);
-
+                            TermQueryBuilder query = getNotEqualsQuery(field, value, nestedPath);
+                            boolQueryBuilder.mustNot().add(query);
                         }
                         if (field.isAnnotationPresent(EsRange.class)) {
                             RangeQueryBuilder query = getRangeQuery(field, value, nestedPath);
@@ -506,11 +504,17 @@ public class EsQueryParse {
                         TermQueryBuilder query = QueryBuilders.termQuery(k, v.getValue());
                         boolQueryBuilder.filter(query);
 
+                    } else if (EsSearchTypeEnum.esNotEquals.name().equals(searchType) && v.getValue() != null) {
+                        QueryBuilder query = QueryBuilders.termQuery(k, v.getValue());
+                        boolQueryBuilder.mustNot().add(query);
                     } else if (EsSearchTypeEnum.esIn.name().equals(searchType)
                                && CollectionUtils.isNotEmpty(v.getValueList())) {
                         QueryBuilder query = QueryBuilders.termsQuery(k, v.getValueList());
                         boolQueryBuilder.filter(query);
-
+                    } else if (EsSearchTypeEnum.esNotIn.name().equals(searchType)
+                               && CollectionUtils.isNotEmpty(v.getValueList())) {
+                        QueryBuilder query = QueryBuilders.termsQuery(k, v.getValueList());
+                        boolQueryBuilder.mustNot().add(query);
                     } else if (EsSearchTypeEnum.esLike.name().equals(searchType) && v.getValue() != null) {
                         String val = wildcardOptimize(v.getValue().toString());
                         WildcardQueryBuilder query = QueryBuilders.wildcardQuery(k, "*" + val + "*");
@@ -518,15 +522,14 @@ public class EsQueryParse {
 
                     } else if (EsSearchTypeEnum.esNotLike.name().equals(searchType) && v.getValue() != null) {
                         String val = wildcardOptimize(v.getValue().toString());
-                        BoolQueryBuilder wildcardBoolQueryBuilder = QueryBuilders.boolQuery();
-                        BoolQueryBuilder query = wildcardBoolQueryBuilder
-                            .mustNot(QueryBuilders.wildcardQuery(k, "*" + val + "*"));
-                        boolQueryBuilder.filter(query);
+                        WildcardQueryBuilder wildcardQueryBuilder = QueryBuilders.wildcardQuery(k, "*" + val + "*");
+                        boolQueryBuilder.mustNot().add(wildcardQueryBuilder);
 
                     } else if (EsSearchTypeEnum.esRange.name().equals(searchType)) {
                         if (v.getStartValue() == null && v.getEndValue() == null) {
                             return;
                         }
+                        //默认包含边界
                         RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(k);
                         if (v.getStartValue() != null) {
                             rangeQueryBuilder.from(v.getStartValue())
@@ -646,11 +649,10 @@ public class EsQueryParse {
         return QueryBuilders.termQuery(filedName, value);
     }
 
-    private static BoolQueryBuilder getNotEqualsQuery(Field field, Object value, String nestedPath) {
+    private static TermQueryBuilder getNotEqualsQuery(Field field, Object value, String nestedPath) {
         EsNotEquals esNotEquals = field.getAnnotation(EsNotEquals.class);
         String filedName = getFiledName(field, esNotEquals.name(), nestedPath);
-        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        return boolQueryBuilder.mustNot(QueryBuilders.termQuery(filedName, value));
+        return QueryBuilders.termQuery(filedName, value);
     }
     private static BoolQueryBuilder getIsNullQuery(Field field, String nestedPath) {
         EsIsNull esNotNull = field.getAnnotation(EsIsNull.class);
@@ -684,7 +686,7 @@ public class EsQueryParse {
         return QueryBuilders.wildcardQuery(filedName, likeValue);
     }
 
-    private static BoolQueryBuilder getNotLikeQuery(Field field, Object value, String nestedPath) {
+    private static WildcardQueryBuilder getNotLikeQuery(Field field, Object value, String nestedPath) {
         String likeValue = (String) value;
         EsNotLike esNotLike = field.getAnnotation(EsNotLike.class);
         String filedName = getFiledName(field, esNotLike.name(), nestedPath);
@@ -694,8 +696,7 @@ public class EsQueryParse {
         if (esNotLike.rightLike()) {
             likeValue = likeValue + "*";
         }
-        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        return boolQueryBuilder.mustNot(QueryBuilders.wildcardQuery(filedName, likeValue));
+        return QueryBuilders.wildcardQuery(filedName, likeValue);
     }
 
     private static ExistsQueryBuilder getNotNullQuery(Field field, String nestedPath) {
