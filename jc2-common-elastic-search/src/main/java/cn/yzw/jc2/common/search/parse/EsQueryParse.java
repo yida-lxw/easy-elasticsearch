@@ -93,6 +93,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class EsQueryParse {
+    private static EsQueryClient queryClient = SpringContextUtils.getBean(EsQueryClient.class);
     private EsQueryParse() {
     }
 
@@ -107,8 +108,10 @@ public class EsQueryParse {
         if (request.getPageSize() > 0) {
             sourceBuilder.trackTotalHits(true);
         }
-        log.info("es query string: GET {}/_search \n {}", request.getIndex(),
+        if (Boolean.TRUE.equals(queryClient.esQueryLogPrint)) {
+            log.info("es query string: GET {}/_search \n {}", request.getIndex(),
                 JsonUtils.writeAsJson(JsonUtils.readAsMap(sourceBuilder.toString())));
+        }
 
         SearchRequest searchRequest = new SearchRequest(request.getIndex());
         searchRequest.source(sourceBuilder);
@@ -126,10 +129,10 @@ public class EsQueryParse {
         if (CollectionUtils.isNotEmpty(searchAfterRequest.getSearchAfterList())) {
             sourceBuilder.searchAfter(searchAfterRequest.getSearchAfterList().toArray());
         }
-
-        log.info("es query string: GET {}/_search \n {}", searchAfterRequest.getIndex(),
+        if (Boolean.TRUE.equals(queryClient.esQueryLogPrint)) {
+            log.info("es query string: GET {}/_search \n {}", searchAfterRequest.getIndex(),
                 JsonUtils.writeAsJson(JsonUtils.readAsMap(sourceBuilder.toString())));
-
+        }
         SearchRequest searchRequest = new SearchRequest(searchAfterRequest.getIndex());
         searchRequest.source(sourceBuilder);
         return searchRequest;
@@ -152,8 +155,10 @@ public class EsQueryParse {
         sourceBuilder.size(0);
         // 查询逻辑
         sourceBuilder.query(boolQueryBuilder);
-        log.info("es query string agg: GET {}/_search \n {}", index,
+        if (Boolean.TRUE.equals(queryClient.esQueryLogPrint)) {
+            log.info("es query string agg: GET {}/_search \n {}", index,
                 JsonUtils.writeAsJson(JsonUtils.readAsMap(sourceBuilder.toString())));
+        }
         searchRequest.source(sourceBuilder);
         return searchRequest;
     }
@@ -168,9 +173,11 @@ public class EsQueryParse {
         searchRequest.source(sourceBuilder);
         Scroll scroll = new Scroll(TimeValue.timeValueMinutes(scrollRequest.getKeepAliveTimeMinute()));
         searchRequest.scroll(scroll);
-        log.info("es query string: GET {}/_search \n {}", scrollRequest.getIndex(),
+        EsQueryClient queryClient = SpringContextUtils.getBean(EsQueryClient.class);
+        if (Boolean.TRUE.equals(queryClient.esQueryLogPrint)) {
+            log.info("es query string: GET {}/_search \n {}", scrollRequest.getIndex(),
                 JsonUtils.writeAsJson(JsonUtils.readAsMap(sourceBuilder.toString())));
-
+        }
         return searchRequest;
     }
 

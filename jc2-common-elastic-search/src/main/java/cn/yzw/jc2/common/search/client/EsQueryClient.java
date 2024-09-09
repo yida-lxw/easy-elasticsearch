@@ -26,7 +26,6 @@ import org.springframework.util.StopWatch;
 import cn.yzw.infra.component.utils.AssertUtils;
 import cn.yzw.jc2.common.search.parse.EsQueryParse;
 import cn.yzw.jc2.common.search.parse.EsQueryResultParse;
-import cn.yzw.jc2.common.search.request.EsSearchBase;
 import cn.yzw.jc2.common.search.request.ScrollRequest;
 import cn.yzw.jc2.common.search.request.SearchAfterRequest;
 import cn.yzw.jc2.common.search.request.SearchPageRequest;
@@ -49,10 +48,23 @@ public class EsQueryClient {
     @Value("${es.query.sleep.ms:500}")
     private Long                esQuerySleepMs;
 
+    /**
+     * 分页最大条数
+     */
     @Value("${es.query.max-size:10000}")
     private Integer             esQueryMaxSize;
-    @Value("${es.query.like.max-size:50}")
+
+    /**
+     * 模糊搜索最大长度
+     */
+    @Value("${es.query.like.max-size:200}")
     public Integer              esQueryLikeMaxSize;
+
+    /**
+     * 是否打印日志
+     */
+    @Value("${es.query.log.print:true}")
+    public Boolean              esQueryLogPrint;
 
     @Value("#{${es.query.sleep.index.config:{}}}")
     private Map<String, Long>   esIndexSleepConfigMap = new HashMap<>();
