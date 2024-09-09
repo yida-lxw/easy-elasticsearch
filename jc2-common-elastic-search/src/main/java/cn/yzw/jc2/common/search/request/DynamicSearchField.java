@@ -14,9 +14,14 @@ public class DynamicSearchField implements Serializable {
     private String       searchType;
 
     /**
-     * nested path
+     * nested path or field
      */
-    private String       nestedPath;
+    private String       nested;
+
+    /**
+     * EsNestedTypeEnum 默认path
+     */
+    private String       nestedType;
 
     /**
      * 范围查询起

@@ -73,7 +73,9 @@ import cn.yzw.jc2.common.search.annotation.agg.EsMax;
 import cn.yzw.jc2.common.search.annotation.agg.EsMin;
 import cn.yzw.jc2.common.search.annotation.agg.EsSum;
 import cn.yzw.jc2.common.search.client.EsQueryClient;
+import cn.yzw.jc2.common.search.enums.EsNestedTypeEnum;
 import cn.yzw.jc2.common.search.enums.EsSearchTypeEnum;
+import cn.yzw.jc2.common.search.request.DynamicSearchField;
 import cn.yzw.jc2.common.search.request.EsSearchBase;
 import cn.yzw.jc2.common.search.request.Order;
 import cn.yzw.jc2.common.search.request.ScrollRequest;
@@ -501,36 +503,60 @@ public class EsQueryParse {
                     }
 
                     if (EsSearchTypeEnum.esEquals.name().equals(searchType) && v.getValue() != null) {
-                        TermQueryBuilder query = QueryBuilders.termQuery(k, v.getValue());
-                        boolQueryBuilder.filter(query);
-
+                        TermQueryBuilder query = QueryBuilders.termQuery(getName(k, v), v.getValue());
+                        buildQuery(boolQueryBuilder, v, query, v.getNested());
                     } else if (EsSearchTypeEnum.esNotEquals.name().equals(searchType) && v.getValue() != null) {
-                        QueryBuilder query = QueryBuilders.termQuery(k, v.getValue());
-                        boolQueryBuilder.mustNot().add(query);
+                        QueryBuilder query = QueryBuilders.termQuery(getName(k, v), v.getValue());
+                        buildQueryMustNot(boolQueryBuilder, v, query, v.getNested());
                     } else if (EsSearchTypeEnum.esIn.name().equals(searchType)
                                && CollectionUtils.isNotEmpty(v.getValueList())) {
-                        QueryBuilder query = QueryBuilders.termsQuery(k, v.getValueList());
-                        boolQueryBuilder.filter(query);
+                        if (StringUtils.isNotBlank(v.getNested())) {
+                            if (EsNestedTypeEnum.field.name().equals(v.getNestedType())) {
+                                QueryBuilder query = QueryBuilders.termsQuery(k + "." + v.getNested(),
+                                    v.getValueList());
+                                buildQuery(boolQueryBuilder, v, query, k);
+                            } else {
+                                QueryBuilder query = QueryBuilders.termsQuery(v.getNested() + "." + k,
+                                    v.getValueList());
+                                buildQuery(boolQueryBuilder, v, query, v.getNested());
+                            }
+                        } else {
+                            QueryBuilder query = QueryBuilders.termsQuery(k, v.getValueList());
+                            buildQuery(boolQueryBuilder, v, query, null);
+                        }
                     } else if (EsSearchTypeEnum.esNotIn.name().equals(searchType)
                                && CollectionUtils.isNotEmpty(v.getValueList())) {
-                        QueryBuilder query = QueryBuilders.termsQuery(k, v.getValueList());
-                        boolQueryBuilder.mustNot().add(query);
+                        if (StringUtils.isNotBlank(v.getNested())) {
+                            if (EsNestedTypeEnum.field.name().equals(v.getNestedType())) {
+                                QueryBuilder query = QueryBuilders.termsQuery(k + "." + v.getNested(),
+                                    v.getValueList());
+                                buildQueryMustNot(boolQueryBuilder, v, query, k);
+                            } else {
+                                QueryBuilder query = QueryBuilders.termsQuery(v.getNested() + "." + k,
+                                    v.getValueList());
+                                buildQueryMustNot(boolQueryBuilder, v, query, v.getNested());
+                            }
+                        } else {
+                            QueryBuilder query = QueryBuilders.termsQuery(k, v.getValueList());
+                            buildQueryMustNot(boolQueryBuilder, v, query, null);
+                        }
                     } else if (EsSearchTypeEnum.esLike.name().equals(searchType) && v.getValue() != null) {
                         String val = wildcardOptimize(v.getValue().toString());
-                        WildcardQueryBuilder query = QueryBuilders.wildcardQuery(k, "*" + val + "*");
-                        boolQueryBuilder.filter(query);
+                        WildcardQueryBuilder query = QueryBuilders.wildcardQuery(getName(k, v), "*" + val + "*");
+                        buildQuery(boolQueryBuilder, v, query, v.getNested());
 
                     } else if (EsSearchTypeEnum.esNotLike.name().equals(searchType) && v.getValue() != null) {
                         String val = wildcardOptimize(v.getValue().toString());
-                        WildcardQueryBuilder wildcardQueryBuilder = QueryBuilders.wildcardQuery(k, "*" + val + "*");
-                        boolQueryBuilder.mustNot().add(wildcardQueryBuilder);
+                        WildcardQueryBuilder wildcardQueryBuilder = QueryBuilders.wildcardQuery(getName(k, v),
+                            "*" + val + "*");
+                        buildQueryMustNot(boolQueryBuilder, v, wildcardQueryBuilder, v.getNested());
 
                     } else if (EsSearchTypeEnum.esRange.name().equals(searchType)) {
                         if (v.getStartValue() == null && v.getEndValue() == null) {
                             return;
                         }
                         //默认包含边界
-                        RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(k);
+                        RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(getName(k, v));
                         if (v.getStartValue() != null) {
                             rangeQueryBuilder.from(v.getStartValue())
                                 .includeLower(BooleanUtils.isNotFalse(v.getIncludeLower()));
@@ -539,15 +565,14 @@ public class EsQueryParse {
                             rangeQueryBuilder.to(v.getEndValue())
                                 .includeUpper(BooleanUtils.isNotFalse(v.getIncludeLower()));
                         }
-                        boolQueryBuilder.filter(rangeQueryBuilder);
+                        buildQuery(boolQueryBuilder, v, rangeQueryBuilder, v.getNested());
 
                     } else if (EsSearchTypeEnum.esIsNull.name().equals(searchType)) {
-                        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-                        boolQueryBuilder.filter(boolQuery.mustNot(QueryBuilders.existsQuery(k)));
-
+                        ExistsQueryBuilder existsQueryBuilder = QueryBuilders.existsQuery(getName(k, v));
+                        buildQueryMustNot(boolQueryBuilder, v, existsQueryBuilder, v.getNested());
                     } else if (EsSearchTypeEnum.esIsNotNull.name().equals(searchType)) {
-                        ExistsQueryBuilder existsQueryBuilder = QueryBuilders.existsQuery(k);
-                        boolQueryBuilder.filter(existsQueryBuilder);
+                        ExistsQueryBuilder existsQueryBuilder = QueryBuilders.existsQuery(getName(k, v));
+                        buildQuery(boolQueryBuilder, v, existsQueryBuilder, v.getNested());
 
                     } else {
                         throw new IllegalArgumentException(String.format("搜索字段【%s】搜索类型【%s】不能识别", k, searchType));
@@ -555,6 +580,30 @@ public class EsQueryParse {
                 });
             }
         }
+    }
+
+    private static void buildQuery(BoolQueryBuilder boolQueryBuilder, DynamicSearchField v, QueryBuilder query,
+                                   String nestedPath) {
+        if (StringUtils.isNotBlank(nestedPath)) {
+            NestedQueryBuilder nestedQueryBuilder = QueryBuilders.nestedQuery(nestedPath, query, ScoreMode.None);
+            boolQueryBuilder.filter(nestedQueryBuilder);
+        } else {
+            boolQueryBuilder.filter(query);
+        }
+    }
+
+    private static void buildQueryMustNot(BoolQueryBuilder boolQueryBuilder, DynamicSearchField v, QueryBuilder query,
+                                          String nestedPath) {
+        if (StringUtils.isNotBlank(nestedPath)) {
+            NestedQueryBuilder nestedQueryBuilder = QueryBuilders.nestedQuery(nestedPath, query, ScoreMode.None);
+            boolQueryBuilder.mustNot().add(nestedQueryBuilder);
+        } else {
+            boolQueryBuilder.mustNot().add(query);
+        }
+    }
+
+    private static String getName(String k, DynamicSearchField v) {
+        return StringUtils.isNotBlank(v.getNested()) ? v.getNested() + "." + k : k;
     }
 
     private static String wildcardOptimize(String value) {
