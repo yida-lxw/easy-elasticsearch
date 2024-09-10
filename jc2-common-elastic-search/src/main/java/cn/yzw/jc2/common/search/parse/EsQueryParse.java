@@ -581,8 +581,6 @@ public class EsQueryParse {
                         ExistsQueryBuilder existsQueryBuilder = QueryBuilders.existsQuery(getName(k, v));
                         buildQuery(boolQueryBuilder, v, existsQueryBuilder, v.getNested());
 
-                    } else {
-                        throw new IllegalArgumentException(String.format("搜索字段【%s】搜索类型【%s】不能识别", k, searchType));
                     }
                 });
             }
