@@ -508,13 +508,34 @@ public class EsQueryParse {
                     if (StringUtils.isBlank(searchType)) {
                         throw new IllegalArgumentException(String.format("搜索字段【%s】搜索类型不能为空", k));
                     }
-
                     if (EsSearchTypeEnum.esEquals.name().equals(searchType) && v.getValue() != null) {
-                        TermQueryBuilder query = QueryBuilders.termQuery(getName(k, v), v.getValue());
-                        buildQuery(boolQueryBuilder, v, query, v.getNested());
+                        Object value = v.getValue();
+                        //处理空字符串
+                        if (value instanceof String) {
+                            String val = (String) value;
+                            if (StringUtils.isNotBlank(val)) {
+                                TermQueryBuilder query = QueryBuilders.termQuery(getName(k, v), val);
+                                buildQuery(boolQueryBuilder, v, query, v.getNested());
+                            }
+                        } else {
+                            TermQueryBuilder query = QueryBuilders.termQuery(getName(k, v), value);
+                            buildQuery(boolQueryBuilder, v, query, v.getNested());
+                        }
+
                     } else if (EsSearchTypeEnum.esNotEquals.name().equals(searchType) && v.getValue() != null) {
-                        QueryBuilder query = QueryBuilders.termQuery(getName(k, v), v.getValue());
-                        buildQueryMustNot(boolQueryBuilder, v, query, v.getNested());
+                        Object value = v.getValue();
+                        //处理空字符串
+                        if (value instanceof String) {
+                            String val = (String) value;
+                            if (StringUtils.isNotBlank(val)) {
+                                TermQueryBuilder query = QueryBuilders.termQuery(getName(k, v), val);
+                                buildQueryMustNot(boolQueryBuilder, v, query, v.getNested());
+                            }
+                        } else {
+                            QueryBuilder query = QueryBuilders.termQuery(getName(k, v), v.getValue());
+                            buildQueryMustNot(boolQueryBuilder, v, query, v.getNested());
+                        }
+
                     } else if (EsSearchTypeEnum.esIn.name().equals(searchType)
                                && CollectionUtils.isNotEmpty(v.getValueList())) {
                         if (StringUtils.isNotBlank(v.getNested())) {
@@ -549,14 +570,18 @@ public class EsQueryParse {
                         }
                     } else if (EsSearchTypeEnum.esLike.name().equals(searchType) && v.getValue() != null) {
                         String val = wildcardOptimize(v.getValue().toString());
-                        WildcardQueryBuilder query = QueryBuilders.wildcardQuery(getName(k, v), "*" + val + "*");
-                        buildQuery(boolQueryBuilder, v, query, v.getNested());
+                        if (StringUtils.isNotBlank(val)) {
+                            WildcardQueryBuilder query = QueryBuilders.wildcardQuery(getName(k, v), "*" + val + "*");
+                            buildQuery(boolQueryBuilder, v, query, v.getNested());
+                        }
 
                     } else if (EsSearchTypeEnum.esNotLike.name().equals(searchType) && v.getValue() != null) {
                         String val = wildcardOptimize(v.getValue().toString());
-                        WildcardQueryBuilder wildcardQueryBuilder = QueryBuilders.wildcardQuery(getName(k, v),
-                            "*" + val + "*");
-                        buildQueryMustNot(boolQueryBuilder, v, wildcardQueryBuilder, v.getNested());
+                        if (StringUtils.isNotBlank(val)) {
+                            WildcardQueryBuilder wildcardQueryBuilder = QueryBuilders.wildcardQuery(getName(k, v),
+                                "*" + val + "*");
+                            buildQueryMustNot(boolQueryBuilder, v, wildcardQueryBuilder, v.getNested());
+                        }
 
                     } else if (EsSearchTypeEnum.esRange.name().equals(searchType)) {
                         if (v.getStartValue() == null && v.getEndValue() == null) {
