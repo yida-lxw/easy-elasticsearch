@@ -579,7 +579,7 @@ public class EsQueryParse {
                         String val = wildcardOptimize(v.getValue().toString());
                         if (StringUtils.isNotBlank(val)) {
                             WildcardQueryBuilder wildcardQueryBuilder = QueryBuilders.wildcardQuery(getName(k, v),
-                                "*" + val + "*");
+                                "*" + wildcardOptimize(val) + "*");
                             buildQueryMustNot(boolQueryBuilder, v, wildcardQueryBuilder, v.getNested());
                         }
 
