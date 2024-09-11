@@ -508,32 +508,40 @@ public class EsQueryParse {
                     if (StringUtils.isBlank(searchType)) {
                         throw new IllegalArgumentException(String.format("搜索字段【%s】搜索类型不能为空", k));
                     }
+                    //处理空字符串
+                    if (v.getValue() != null && v.getValue() instanceof String) {
+                        String val = (String) v.getValue();
+                        if (StringUtils.isBlank(val)) {
+                            v.setValue(null);
+                        }
+                    }
                     if (EsSearchTypeEnum.esEquals.name().equals(searchType) && v.getValue() != null) {
                         Object value = v.getValue();
-                        //处理空字符串
-                        if (value instanceof String) {
-                            String val = (String) value;
-                            if (StringUtils.isNotBlank(val)) {
-                                TermQueryBuilder query = QueryBuilders.termQuery(getName(k, v), val);
+                        if (StringUtils.isNotBlank(v.getNested())) {
+                            if (EsNestedTypeEnum.field.name().equals(v.getNestedType())) {
+                                QueryBuilder query = QueryBuilders.termQuery(k + "." + v.getNested(), v.getValue());
+                                buildQuery(boolQueryBuilder, v, query, k);
+                            } else {
+                                QueryBuilder query = QueryBuilders.termsQuery(v.getNested() + "." + k, v.getValue());
                                 buildQuery(boolQueryBuilder, v, query, v.getNested());
                             }
                         } else {
                             TermQueryBuilder query = QueryBuilders.termQuery(getName(k, v), value);
-                            buildQuery(boolQueryBuilder, v, query, v.getNested());
+                            buildQuery(boolQueryBuilder, v, query, null);
                         }
-
                     } else if (EsSearchTypeEnum.esNotEquals.name().equals(searchType) && v.getValue() != null) {
                         Object value = v.getValue();
-                        //处理空字符串
-                        if (value instanceof String) {
-                            String val = (String) value;
-                            if (StringUtils.isNotBlank(val)) {
-                                TermQueryBuilder query = QueryBuilders.termQuery(getName(k, v), val);
+                        if (StringUtils.isNotBlank(v.getNested())) {
+                            if (EsNestedTypeEnum.field.name().equals(v.getNestedType())) {
+                                QueryBuilder query = QueryBuilders.termQuery(k + "." + v.getNested(), v.getValue());
+                                buildQuery(boolQueryBuilder, v, query, k);
+                            } else {
+                                QueryBuilder query = QueryBuilders.termsQuery(v.getNested() + "." + k, v.getValue());
                                 buildQueryMustNot(boolQueryBuilder, v, query, v.getNested());
                             }
                         } else {
                             QueryBuilder query = QueryBuilders.termQuery(getName(k, v), v.getValue());
-                            buildQueryMustNot(boolQueryBuilder, v, query, v.getNested());
+                            buildQueryMustNot(boolQueryBuilder, v, query, null);
                         }
 
                     } else if (EsSearchTypeEnum.esIn.name().equals(searchType)
