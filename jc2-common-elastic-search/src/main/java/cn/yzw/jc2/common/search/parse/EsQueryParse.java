@@ -516,7 +516,6 @@ public class EsQueryParse {
                         }
                     }
                     if (EsSearchTypeEnum.esEquals.name().equals(searchType) && v.getValue() != null) {
-                        Object value = v.getValue();
                         if (StringUtils.isNotBlank(v.getNested())) {
                             if (EsNestedTypeEnum.field.name().equals(v.getNestedType())) {
                                 QueryBuilder query = QueryBuilders.termQuery(k + "." + v.getNested(), v.getValue());
@@ -526,11 +525,10 @@ public class EsQueryParse {
                                 buildQuery(boolQueryBuilder, v, query, v.getNested());
                             }
                         } else {
-                            TermQueryBuilder query = QueryBuilders.termQuery(getName(k, v), value);
+                            TermQueryBuilder query = QueryBuilders.termQuery(getName(k, v),  v.getValue());
                             buildQuery(boolQueryBuilder, v, query, null);
                         }
                     } else if (EsSearchTypeEnum.esNotEquals.name().equals(searchType) && v.getValue() != null) {
-                        Object value = v.getValue();
                         if (StringUtils.isNotBlank(v.getNested())) {
                             if (EsNestedTypeEnum.field.name().equals(v.getNestedType())) {
                                 QueryBuilder query = QueryBuilders.termQuery(k + "." + v.getNested(), v.getValue());
