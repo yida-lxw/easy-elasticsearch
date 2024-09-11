@@ -595,7 +595,7 @@ public class EsQueryParse {
                         }
                         if (v.getEndValue() != null) {
                             rangeQueryBuilder.to(v.getEndValue())
-                                .includeUpper(BooleanUtils.isNotFalse(v.getIncludeLower()));
+                                .includeUpper(BooleanUtils.isNotFalse(v.getIncludeUpper()));
                         }
                         buildQuery(boolQueryBuilder, v, rangeQueryBuilder, v.getNested());
 
