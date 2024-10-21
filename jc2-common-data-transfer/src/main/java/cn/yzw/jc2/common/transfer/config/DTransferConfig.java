@@ -21,7 +21,6 @@ import cn.yzw.infra.component.utils.JsonUtils;
 import cn.yzw.jc2.common.transfer.interceptor.DoubleWriteInterceptor;
 import cn.yzw.jc2.common.transfer.interceptor.SingleReadInterceptor;
 import cn.yzw.jc2.common.transfer.job.DTransferJob;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -32,7 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Configuration
 @ConfigurationProperties(prefix = "dtransfer.double.writer")
-@Data
 public class DTransferConfig {
 
     private static final String                         DTRANSFER_DOUBLE_WRITER_MAP = "dtransfer.double.writer.list";
