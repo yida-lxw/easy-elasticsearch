@@ -74,7 +74,7 @@ public class DTransferConfig {
     }
 
     /**
-     * @Description: 将配置转为map,将表名转为小写
+     * @Description: 将配置转为map,表名转为小写,规范表名
      * @Author: lbl 
      * @Date:  2024/10/21 14:25
      * @param:
