@@ -1,7 +1,12 @@
 package cn.yzw.jc2.common.transfer.interceptor;
 
+import java.util.List;
+import java.util.Map;
+
 import javax.annotation.Resource;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
@@ -21,23 +26,38 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import cn.yzw.jc2.common.transfer.config.DTransferConfig;
+import cn.yzw.jc2.common.transfer.config.DTransferDoubleWriteProperties;
+import cn.yzw.jc2.common.transfer.enums.WriteTypeEnum;
 import cn.yzw.jc2.common.transfer.utils.SqlUtils;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @Description: 双写拦截
  * @Author: lbl 
  * @Date: 2024/10/17
  **/
+@Slf4j
 @Component
 @Intercepts({ @Signature(type = Executor.class, method = "update", args = { MappedStatement.class, Object.class }), })
-@ConditionalOnClass(Interceptor.class)
+@ConditionalOnClass(DTransferConfig.class)
 public class DoubleWriteInterceptor implements Interceptor {
 
+    @Resource
+    private DTransferConfig            dTransferConfig;
     @Resource
     private PlatformTransactionManager transactionManager;
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
+        if (!Boolean.TRUE.equals(dTransferConfig.getOpen())) {
+            return invocation.proceed();
+        }
+        Map<String, DTransferDoubleWriteProperties> writePropertiesMap = dTransferConfig
+                .getDoubleWritePropertiesMap();
+        if (MapUtils.isEmpty(writePropertiesMap)) {
+            return invocation.proceed();
+        }
 
         // 获取目标方法和参数
         Object[] args = invocation.getArgs();
@@ -54,9 +74,29 @@ public class DoubleWriteInterceptor implements Interceptor {
 
             Configuration configuration = ms.getConfiguration();
             String originalSql = ms.getBoundSql(parameter).getSql();
+            List<String> tableNames = SqlUtils.getTableNames(originalSql);
+            if (CollectionUtils.isEmpty(tableNames) || tableNames.size() > 1) {
+                log.info("DoubleWriteInterceptor表名不符合拦截条件{}", tableNames);
+                return invocation.proceed();
+            }
+            String oldTableName = tableNames.get(0);
+            if (!writePropertiesMap.containsKey(oldTableName)
+                || !Boolean.TRUE.equals(writePropertiesMap.get(oldTableName).getOpen())) {
+                return invocation.proceed();
+            }
+            log.info("DoubleWriteInterceptor拦截表{}", oldTableName);
+            DTransferDoubleWriteProperties dTransferDoubleWriteProperties = writePropertiesMap.get(oldTableName);
+
+            if (!WriteTypeEnum.WRITE_ALL_TABLE.name().equalsIgnoreCase(dTransferDoubleWriteProperties.getWriteType())) {
+                return invocation.proceed();
+            }
+            //双写开始
+            log.info("DoubleWriteInterceptor双写开始{}", oldTableName);
+
             // 替换表名：假设 A 表名为 'table_a'，B 表名为 'table_b'
-            String modifiedSql = SqlUtils.replaceTableName(originalSql, "test", "test_user");
-            //            String modifiedSql = originalSql.replace("test", "test_user");
+            String modifiedSql = SqlUtils.replaceTableName(originalSql, oldTableName,
+                dTransferDoubleWriteProperties.getNewTableName());
+            log.info("DoubleWriteInterceptor生成新表sql {}", modifiedSql);
 
             // 创建新的 BoundSql
             BoundSql newBoundSql = new BoundSql(configuration, modifiedSql,
