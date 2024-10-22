@@ -20,7 +20,6 @@ import javax.sql.DataSource;
 @Configuration
 public class DataSourceConfig {
 
-    @Primary
     @Bean(name = "transferReadDataSource")
     @Qualifier("transferReadDataSource")
     @ConfigurationProperties(prefix = "spring.datasource.transfer.read")
@@ -30,20 +29,19 @@ public class DataSourceConfig {
 
     @Bean(name = "transferWriteDataSource")
     @Qualifier("transferWriteDataSource")
-    @ConfigurationProperties(prefix="spring.datasource.transfer.write")
+    @ConfigurationProperties(prefix = "spring.datasource.transfer.write")
     public DruidDataSource transferWriteDataSource() {
         return DruidDataSourceBuilder.create().build();
     }
 
-
     @Primary
     @Bean("transferReadJdbcTemplate")
-    public JdbcTemplate transferReadJdbcTemplate(@Qualifier("transferReadDataSource") DataSource dataSource){
+    public JdbcTemplate transferReadJdbcTemplate(@Qualifier("transferReadDataSource") DataSource dataSource) {
         return new JdbcTemplate(dataSource);
     }
 
     @Bean("transferWriteJdbcTemplate")
-    public JdbcTemplate transferTargetJdbcTemplate(@Qualifier("transferWriteDataSource")DataSource dataSource){
+    public JdbcTemplate transferTargetJdbcTemplate(@Qualifier("transferWriteDataSource") DataSource dataSource) {
         return new JdbcTemplate(dataSource);
     }
 
