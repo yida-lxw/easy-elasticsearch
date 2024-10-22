@@ -6,9 +6,7 @@ import javax.annotation.Resource;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.skywalking.apm.toolkit.trace.TraceContext;
-import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 
 import com.xxl.job.core.biz.model.ReturnT;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -25,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
  * @Date: 2024/10/17
  **/
 @Slf4j
-public class DTransferJob implements ApplicationContextAware {
+public class DTransferJob {
 
     @Resource
     private DTransferFactory dTransferFactory;
@@ -86,10 +84,5 @@ public class DTransferJob implements ApplicationContextAware {
             XxlJobLogger.log(ex);
         }
         return res;
-    }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
     }
 }

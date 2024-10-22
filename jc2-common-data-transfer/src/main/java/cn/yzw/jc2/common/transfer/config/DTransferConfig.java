@@ -54,8 +54,8 @@ public class DTransferConfig {
     @ApolloConfig(value = "dtransfer")
     private Config                                      config;
 
-    @Bean("retryTaskJob")
-    public DTransferJob RetryTaskJob() {
+    @Bean("fullDTransferJob")
+    public DTransferJob dTransferJob() {
         return new DTransferJob();
     }
 
