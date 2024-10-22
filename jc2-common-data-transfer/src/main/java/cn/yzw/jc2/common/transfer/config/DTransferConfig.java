@@ -1,5 +1,6 @@
 package cn.yzw.jc2.common.transfer.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,6 +15,9 @@ import lombok.Data;
 @Data
 @Configuration
 public class DTransferConfig {
+
+    @Value("${spring.application.name}")
+    private String appName;
 
     @Bean("retryTaskJob")
     public DTransferJob RetryTaskJob() {
