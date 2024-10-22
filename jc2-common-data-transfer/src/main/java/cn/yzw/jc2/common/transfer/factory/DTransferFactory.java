@@ -12,9 +12,11 @@ import java.util.concurrent.Future;
 
 import javax.annotation.Resource;
 
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import cn.hutool.core.collection.CollectionUtil;
@@ -31,8 +33,9 @@ import lombok.extern.slf4j.Slf4j;
  * @author yl
  */
 @Slf4j
-@Component
-public class DTransferFactory {
+public class DTransferFactory implements ApplicationContextAware {
+
+    private ApplicationContext          applicationContext;
 
     @Resource
     private RedisTemplate<String, Long> redisTemplate;
@@ -46,8 +49,7 @@ public class DTransferFactory {
     private static final String         SHARDING_TABLE_SUFFIX = "_NEW";
 
     public void consumer(DTransferJobRequest request) {
-        String cacheKey = "DTRANSFER" + appName + ":" + request.getTable() + ":"
-                          + request.getJobId();
+        String cacheKey = "DTRANSFER" + appName + ":" + request.getTable() + ":" + request.getJobId();
         redisTemplate.opsForValue().set(cacheKey, request.getStartId());
         if (Objects.nonNull(request.getEndId()) && request.getEndId() != 0) {
             request.setMaxId(request.getMaxId());
@@ -124,8 +126,7 @@ public class DTransferFactory {
     }
 
     private void executorLock(DTransferJobRequest request) {
-        String cacheKey = "DTRANSFER" + appName + ":" + request.getTable() + ":"
-                          + request.getJobId();
+        String cacheKey = "DTRANSFER" + appName + ":" + request.getTable() + ":" + request.getJobId();
         while (true) {
             Long executorStartId;
             Long executorEndId;
@@ -211,5 +212,10 @@ public class DTransferFactory {
         } catch (Exception e) {
             log.error("data-sync-error: 同步异常.任务id为{}，表名为{}，数据为{}", request.getJobId(), request.getTable(), dataList, e);
         }
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
     }
 }
