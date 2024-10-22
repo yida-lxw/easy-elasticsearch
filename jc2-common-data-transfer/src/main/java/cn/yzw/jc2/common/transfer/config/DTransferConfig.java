@@ -1,6 +1,5 @@
 package cn.yzw.jc2.common.transfer.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,9 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 @Configuration
 @ConfigurationProperties(prefix = "dtransfer.double.writer")
 public class DTransferConfig {
-
-    @Value("${spring.application.name}")
-    private String appName;
 
     private static final String                         DTRANSFER_DOUBLE_WRITER_MAP = "dtransfer.double.writer.list";
 
