@@ -7,6 +7,7 @@ import java.util.Map;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +19,7 @@ import com.ctrip.framework.apollo.spring.annotation.ApolloConfigChangeListener;
 
 import cn.yzw.infra.component.utils.AssertUtils;
 import cn.yzw.infra.component.utils.JsonUtils;
+import cn.yzw.jc2.common.transfer.factory.DTransferFactory;
 import cn.yzw.jc2.common.transfer.interceptor.DoubleWriteInterceptor;
 import cn.yzw.jc2.common.transfer.interceptor.SingleReadInterceptor;
 import cn.yzw.jc2.common.transfer.job.DTransferJob;
@@ -69,6 +71,12 @@ public class DTransferConfig {
     public SingleReadInterceptor singleReadInterceptor() {
         log.info("init mybatis SingleReadInterceptor");
         return new SingleReadInterceptor();
+    }
+
+    @Bean("dTransferFactory")
+    @ConditionalOnMissingClass("cn.yzw.jc2.common.transfer.factory.DTransferFactory")
+    public DTransferFactory dTransferFactory() {
+        return new DTransferFactory();
     }
 
     /**
