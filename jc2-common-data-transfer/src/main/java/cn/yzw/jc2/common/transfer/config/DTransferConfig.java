@@ -57,6 +57,19 @@ public class DTransferConfig {
     @ApolloConfig(value = "dtransfer")
     private Config                                      config;
 
+
+    @Bean("dataTransferService")
+    @ConditionalOnMissingClass("cn.yzw.jc2.common.transfer.service.impl.DataTransferServiceImpl")
+    public DataTransferServiceImpl dataTransferService() {
+        return new DataTransferServiceImpl();
+    }
+
+    @Bean("dTransferFactory")
+    @ConditionalOnMissingClass("cn.yzw.jc2.common.transfer.factory.DTransferFactory")
+    public DTransferFactory dTransferFactory() {
+        return new DTransferFactory();
+    }
+
     @Bean("dTransferJob")
     public DTransferJob dTransferJob() {
         return new DTransferJob();
@@ -72,19 +85,6 @@ public class DTransferConfig {
     public SingleReadInterceptor singleReadInterceptor() {
         log.info("init mybatis SingleReadInterceptor");
         return new SingleReadInterceptor();
-    }
-
-    @Bean("dTransferFactory")
-    @ConditionalOnMissingClass("cn.yzw.jc2.common.transfer.factory.DTransferFactory")
-    public DTransferFactory dTransferFactory() {
-        return new DTransferFactory();
-    }
-
-
-    @Bean("dataTransferService")
-    @ConditionalOnMissingClass("cn.yzw.jc2.common.transfer.service.impl.DataTransferServiceImpl")
-    public DataTransferServiceImpl dataTransferService() {
-        return new DataTransferServiceImpl();
     }
 
     /**
