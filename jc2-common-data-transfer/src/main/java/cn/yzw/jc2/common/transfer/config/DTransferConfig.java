@@ -7,7 +7,6 @@ import java.util.Map;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -59,13 +58,11 @@ public class DTransferConfig {
 
 
     @Bean("dataTransferService")
-    @ConditionalOnMissingClass("cn.yzw.jc2.common.transfer.service.impl.DataTransferServiceImpl")
     public DataTransferServiceImpl dataTransferService() {
         return new DataTransferServiceImpl();
     }
 
     @Bean("dTransferFactory")
-    @ConditionalOnMissingClass("cn.yzw.jc2.common.transfer.factory.DTransferFactory")
     public DTransferFactory dTransferFactory() {
         return new DTransferFactory();
     }
