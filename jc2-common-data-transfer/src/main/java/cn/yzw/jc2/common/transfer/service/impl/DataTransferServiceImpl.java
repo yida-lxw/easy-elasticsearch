@@ -8,7 +8,6 @@ import javax.annotation.Resource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
@@ -25,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
  * @author: yangle
  * @date: 2024/10/21
  **/
-@Service
 @Slf4j
 public class DataTransferServiceImpl implements DataTransferService {
 

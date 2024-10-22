@@ -23,6 +23,7 @@ import cn.yzw.jc2.common.transfer.factory.DTransferFactory;
 import cn.yzw.jc2.common.transfer.interceptor.DoubleWriteInterceptor;
 import cn.yzw.jc2.common.transfer.interceptor.SingleReadInterceptor;
 import cn.yzw.jc2.common.transfer.job.DTransferJob;
+import cn.yzw.jc2.common.transfer.service.impl.DataTransferServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -77,6 +78,13 @@ public class DTransferConfig {
     @ConditionalOnMissingClass("cn.yzw.jc2.common.transfer.factory.DTransferFactory")
     public DTransferFactory dTransferFactory() {
         return new DTransferFactory();
+    }
+
+
+    @Bean("dataTransferService")
+    @ConditionalOnMissingClass("cn.yzw.jc2.common.transfer.service.impl.DataTransferServiceImpl")
+    public DataTransferServiceImpl dataTransferService() {
+        return new DataTransferServiceImpl();
     }
 
     /**

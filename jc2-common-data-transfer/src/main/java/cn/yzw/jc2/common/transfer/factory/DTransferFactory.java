@@ -12,10 +12,7 @@ import java.util.concurrent.Future;
 
 import javax.annotation.Resource;
 
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.CollectionUtils;
 
@@ -33,9 +30,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author yl
  */
 @Slf4j
-public class DTransferFactory implements ApplicationContextAware {
-
-    private ApplicationContext          applicationContext;
+public class DTransferFactory {
 
     @Resource
     private RedisTemplate<String, Long> redisTemplate;
@@ -212,10 +207,5 @@ public class DTransferFactory implements ApplicationContextAware {
         } catch (Exception e) {
             log.error("data-sync-error: 同步异常.任务id为{}，表名为{}，数据为{}", request.getJobId(), request.getTable(), dataList, e);
         }
-    }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
     }
 }
