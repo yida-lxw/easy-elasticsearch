@@ -3,6 +3,7 @@ package cn.yzw.jc2.common.transfer.config;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +20,9 @@ import javax.sql.DataSource;
  **/
 @Configuration
 public class DataSourceConfig {
+
+    @Value("${application.name}")
+    private String appName;
 
     @Bean(name = "transferReadDataSource")
     @Qualifier("transferReadDataSource")
@@ -53,5 +57,9 @@ public class DataSourceConfig {
     @Bean(name = "transferWriteTransactionManager")
     public DataSourceTransactionManager transferTargetTransactionManager(@Qualifier("transferWriteDataSource") DataSource dataSource) {
         return new DataSourceTransactionManager(dataSource);
+    }
+
+    public String getAppName() {
+        return appName;
     }
 }

@@ -12,11 +12,11 @@ import java.util.concurrent.Future;
 
 import javax.annotation.Resource;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.CollectionUtils;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.yzw.jc2.common.transfer.config.DataSourceConfig;
 import cn.yzw.jc2.common.transfer.model.DTransferJobRequest;
 import cn.yzw.jc2.common.transfer.model.ReadRequest;
 import cn.yzw.jc2.common.transfer.model.WriteRequest;
@@ -38,13 +38,14 @@ public class DTransferFactory {
     @Resource
     private DataTransferService         dataTransferService;
 
-    @Value("${application.name}")
-    private String                      appName;
+    @Resource
+    private DataSourceConfig            dataSourceConfig;
 
     private static final String         SHARDING_TABLE_SUFFIX = "_NEW";
 
     public void consumer(DTransferJobRequest request) {
-        String cacheKey = "DTRANSFER" + appName + ":" + request.getTable() + ":" + request.getJobId();
+        String cacheKey = "DTRANSFER" + dataSourceConfig.getAppName() + ":" + request.getTable() + ":"
+                          + request.getJobId();
         redisTemplate.opsForValue().set(cacheKey, request.getStartId());
         if (Objects.nonNull(request.getEndId()) && request.getEndId() != 0) {
             request.setMaxId(request.getMaxId());
@@ -121,7 +122,7 @@ public class DTransferFactory {
     }
 
     private void executorLock(DTransferJobRequest request) {
-        String cacheKey = "DTRANSFER" + appName + ":" + request.getTable() + ":" + request.getJobId();
+        String cacheKey = "DTRANSFER" + dataSourceConfig.getAppName() + ":" + request.getTable() + ":" + request.getJobId();
         while (true) {
             Long executorStartId;
             Long executorEndId;
