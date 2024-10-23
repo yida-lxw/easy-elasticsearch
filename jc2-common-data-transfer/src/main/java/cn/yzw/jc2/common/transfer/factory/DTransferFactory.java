@@ -12,7 +12,7 @@ import java.util.concurrent.Future;
 
 import javax.annotation.Resource;
 
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.CollectionUtils;
 
 import cn.hutool.core.collection.CollectionUtil;
@@ -22,6 +22,7 @@ import cn.yzw.jc2.common.transfer.model.ReadRequest;
 import cn.yzw.jc2.common.transfer.model.WriteRequest;
 import cn.yzw.jc2.common.transfer.service.DataTransferService;
 import cn.yzw.jc2.common.transfer.utils.CommonRdbmsUtil;
+import jodd.util.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -33,19 +34,23 @@ import lombok.extern.slf4j.Slf4j;
 public class DTransferFactory {
 
     @Resource
-    private RedisTemplate<String, Long> redisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
 
     @Resource
-    private DataTransferService         dataTransferService;
+    private DataTransferService dataTransferService;
 
     @Resource
-    private DataSourceConfig dataSourceConfig;
+    private DataSourceConfig    dataSourceConfig;
 
-    private static final String         SHARDING_TABLE_SUFFIX = "_NEW";
+    private static final String SHARDING_TABLE_SUFFIX = "_NEW";
+
+    private static final String CACHE_KEY_PRE         = "DTRANSFER:";
 
     public void consumer(DTransferJobRequest request) {
-        String cacheKey = "DTRANSFER" + dataSourceConfig.getAppName() + ":" + request.getTable() + ":" + request.getJobId();
-        redisTemplate.opsForValue().set(cacheKey, request.getStartId());
+        //这里会自动分到ppfs是否可以去掉appname
+        String cacheKey = CACHE_KEY_PRE + dataSourceConfig.getAppName() + ":" + request.getTable() + ":"
+                          + request.getJobId();
+        stringRedisTemplate.opsForValue().set(cacheKey, request.getStartId().toString());
         if (Objects.nonNull(request.getEndId()) && request.getEndId() != 0) {
             request.setMaxId(request.getMaxId());
         } else if (CollectionUtil.isNotEmpty(request.getIdList())) {
@@ -85,7 +90,7 @@ public class DTransferFactory {
                 if (Objects.nonNull(pool)) {
                     pool.shutdownNow();
                 }
-                redisTemplate.delete(cacheKey);
+                stringRedisTemplate.delete(cacheKey);
             }
         } else {
             log.info("任务id{}串行执行", request.getJobId());
@@ -121,7 +126,8 @@ public class DTransferFactory {
     }
 
     private void executorLock(DTransferJobRequest request) {
-        String cacheKey = "DTRANSFER" + dataSourceConfig.getAppName() + ":" + request.getTable() + ":" + request.getJobId();
+        String cacheKey = "DTRANSFER" + dataSourceConfig.getAppName() + ":" + request.getTable() + ":"
+                          + request.getJobId();
         while (true) {
             Long executorStartId;
             Long executorEndId;
@@ -129,12 +135,14 @@ public class DTransferFactory {
             //获取分片
             try {
                 synchronized (request) {
-                    executorStartId = redisTemplate.opsForValue().get(cacheKey);
-                    if (Objects.isNull(executorStartId)) {
+                    String cacheValue = stringRedisTemplate.opsForValue().get(cacheKey);
+                    if (StringUtil.isBlank(cacheValue)) {
                         executorStartId = 0L;
+                    } else {
+                        executorStartId = Long.valueOf(cacheValue);
                     }
                     executorEndId = executorStartId + request.getLimit();
-                    redisTemplate.opsForValue().set(cacheKey, executorEndId);
+                    stringRedisTemplate.opsForValue().set(cacheKey, executorEndId.toString());
                 }
                 long startTime = System.currentTimeMillis();
                 log.info("任务id为{}开始分段获取数据，获取到分段区间id为{}-{}", request.getJobId(), executorStartId, executorEndId);
