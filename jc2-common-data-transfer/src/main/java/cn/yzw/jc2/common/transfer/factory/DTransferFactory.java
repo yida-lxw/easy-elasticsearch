@@ -127,7 +127,7 @@ public class DTransferFactory {
     }
 
     private void executorLock(DTransferJobRequest request) {
-        String cacheKey = "DTRANSFER" + dataSourceConfig.getAppName() + ":" + request.getTable() + ":"
+        String cacheKey = CACHE_KEY_PRE + dataSourceConfig.getAppName() + ":" + request.getTable() + ":"
                           + request.getJobId();
         while (true) {
             Long executorStartId;
