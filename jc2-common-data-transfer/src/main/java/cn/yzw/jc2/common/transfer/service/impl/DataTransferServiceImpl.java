@@ -30,8 +30,8 @@ public class DataTransferServiceImpl implements DataTransferService {
     @Resource(name = "transferReadJdbcTemplate")
     private JdbcTemplate                 transferReadJdbcTemplate;
 
-    @Resource
-    private JdbcTemplate                 jdbcTemplate;
+    @Resource(name = "transferWriteJdbcTemplate")
+    private JdbcTemplate                 transferWriteJdbcTemplate;
 
     @Resource
     private DataSourceTransactionManager dataSourceTransactionManager;
@@ -58,7 +58,7 @@ public class DataTransferServiceImpl implements DataTransferService {
             DefaultTransactionDefinition def = new DefaultTransactionDefinition();
             def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
             transactionStatus = dataSourceTransactionManager.getTransaction(def);
-            int[] ints = jdbcTemplate.batchUpdate(writeRequest.getWriteTemplate(),
+            int[] ints = transferWriteJdbcTemplate.batchUpdate(writeRequest.getWriteTemplate(),
                 writeRequest.getParams());
             dataSourceTransactionManager.commit(transactionStatus);
             log.info("任务id为{}批量写入成功,需写入条数为{},成功条数为{}", writeRequest.getJobId(), writeRequest.getParams().size(),
@@ -79,7 +79,7 @@ public class DataTransferServiceImpl implements DataTransferService {
     public void doOneInsert(WriteRequest writeRequest) {
         for (Object[] param : writeRequest.getParams()) {
             try {
-                jdbcTemplate.update(writeRequest.getWriteTemplate(), param);
+                transferWriteJdbcTemplate.update(writeRequest.getWriteTemplate(), param);
             } catch (Exception e) {
                 log.error("任务id为{}写入失败，执行sql模版{}，执行参数{}，原因为", writeRequest.getJobId(), writeRequest.getWriteTemplate(),
                     param, e);
