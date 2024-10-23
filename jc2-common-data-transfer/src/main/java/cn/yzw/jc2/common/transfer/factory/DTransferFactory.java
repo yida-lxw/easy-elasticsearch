@@ -39,13 +39,12 @@ public class DTransferFactory {
     private DataTransferService         dataTransferService;
 
     @Resource
-    private DataSourceConfig            dataSourceConfig;
+    private DataSourceConfig dataSourceConfig;
 
     private static final String         SHARDING_TABLE_SUFFIX = "_NEW";
 
     public void consumer(DTransferJobRequest request) {
-        String cacheKey = "DTRANSFER" + dataSourceConfig.getAppName() + ":" + request.getTable() + ":"
-                          + request.getJobId();
+        String cacheKey = "DTRANSFER" + dataSourceConfig.getAppName() + ":" + request.getTable() + ":" + request.getJobId();
         redisTemplate.opsForValue().set(cacheKey, request.getStartId());
         if (Objects.nonNull(request.getEndId()) && request.getEndId() != 0) {
             request.setMaxId(request.getMaxId());
