@@ -27,12 +27,12 @@ public class CommonRdbmsUtil {
                     sql = "select * from " + table;
                 }
                 StringBuilder sb = new StringBuilder(sql);
-                sb.append(" id > ").append(Objects.nonNull(startId) ? startId : 0);
+                sb.append(" where id > ").append(Objects.nonNull(startId) ? startId : 0);
                 if (Objects.nonNull(endId)) {
-                    sb.append(" id <= ").append(endId);
+                    sb.append(" and id <= ").append(endId);
                 }
                 if (CollectionUtil.isNotEmpty(idList)) {
-                    sb.append("id in (").append(idList.stream().map(Object::toString).collect(Collectors.joining(",")))
+                    sb.append(" and id in (").append(idList.stream().map(Object::toString).collect(Collectors.joining(",")))
                         .append(")");
                 }
                 sb.append(" limit ").append(Objects.nonNull(limit) ? limit : 20);

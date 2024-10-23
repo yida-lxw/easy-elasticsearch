@@ -48,9 +48,6 @@ public class DTransferFactory {
 
     public void consumer(DTransferJobRequest request) {
         //这里会自动分到ppfs是否可以去掉appname
-        String cacheKey = CACHE_KEY_PRE + dataSourceConfig.getAppName() + ":" + request.getTable() + ":"
-                          + request.getJobId();
-        stringRedisTemplate.opsForValue().set(cacheKey, request.getStartId().toString());
         if (Objects.nonNull(request.getEndId()) && request.getEndId() != 0) {
             request.setMaxId(request.getMaxId());
         } else if (CollectionUtil.isNotEmpty(request.getIdList())) {
@@ -64,6 +61,10 @@ public class DTransferFactory {
             return;
         }
         if (request.getThreadCount() != null && request.getThreadCount() > 1) {
+            //初始化分片字段
+            String cacheKey = CACHE_KEY_PRE + dataSourceConfig.getAppName() + ":" + request.getTable() + ":"
+                              + request.getJobId();
+            stringRedisTemplate.opsForValue().set(cacheKey, request.getStartId().toString());
             ExecutorService pool = null;
             try {
                 int threadNum = Math.min(request.getThreadCount(), 10);
@@ -159,7 +160,7 @@ public class DTransferFactory {
                 threadParam.setDatasourceType(request.getDatasourceType());
                 List<Map<String, Object>> dataList = dataTransferService.getDataList(threadParam);
                 log.info("任务id为{}分段获取数据结束，获取到分段区间id为{}-{}，一共获取到数据量为：{}，查询花费时间为{}", request.getJobId(), executorStartId,
-                    dataList.size(), executorEndId, System.currentTimeMillis() - startTime);
+                    executorEndId, dataList.size(), System.currentTimeMillis() - startTime);
                 //本批数据处理
                 if (CollectionUtil.isNotEmpty(dataList)) {
                     long start = System.currentTimeMillis();
