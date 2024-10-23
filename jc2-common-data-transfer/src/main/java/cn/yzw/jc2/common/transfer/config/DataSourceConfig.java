@@ -37,12 +37,12 @@ public class DataSourceConfig {
         return DruidDataSourceBuilder.create().build();
     }
 
-    @Bean(name = "transferWriteDataSource")
-    @Qualifier("transferWriteDataSource")
-    @ConfigurationProperties(prefix = "spring.datasource.transfer.write")
-    public DruidDataSource transferWriteDataSource() {
-        return DruidDataSourceBuilder.create().build();
-    }
+//    @Bean(name = "transferWriteDataSource")
+//    @Qualifier("transferWriteDataSource")
+//    @ConfigurationProperties(prefix = "spring.datasource.transfer.write")
+//    public DruidDataSource transferWriteDataSource() {
+//        return DruidDataSourceBuilder.create().build();
+//    }
 
 
     @Bean("transferReadJdbcTemplate")
