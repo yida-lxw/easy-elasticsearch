@@ -33,7 +33,7 @@ public class DataSourceConfig {
 
     @Bean(name = "transferWriteDataSource")
     @Qualifier("transferWriteDataSource")
-    @ConfigurationProperties(prefix = "spring.shardingsphere.datasource.ds0")
+    @ConfigurationProperties(prefix = "spring.datasource.transfer.write")
     public DruidDataSource transferWriteDataSource() {
         return DruidDataSourceBuilder.create().build();
     }
