@@ -6,7 +6,6 @@ import java.util.Objects;
 
 import javax.annotation.Resource;
 
-import cn.yzw.jc2.common.transfer.service.DTransferService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.skywalking.apm.toolkit.trace.TraceContext;
@@ -18,11 +17,11 @@ import com.xxl.job.core.log.XxlJobLogger;
 import cn.hutool.core.util.IdUtil;
 import cn.yzw.infra.component.utils.AssertUtils;
 import cn.yzw.infra.component.utils.JsonUtils;
-import cn.yzw.jc2.common.transfer.service.DataVerifyService;
 import cn.yzw.jc2.common.transfer.enums.VerifyTypeEnum;
 import cn.yzw.jc2.common.transfer.model.DTransferJobRequest;
 import cn.yzw.jc2.common.transfer.model.DTransferVerifyJobRequest;
-import cn.yzw.jc2.common.transfer.service.DTransferFactory;
+import cn.yzw.jc2.common.transfer.service.DTransferService;
+import cn.yzw.jc2.common.transfer.service.DataVerifyService;
 import lombok.extern.slf4j.Slf4j;
 
 /**
