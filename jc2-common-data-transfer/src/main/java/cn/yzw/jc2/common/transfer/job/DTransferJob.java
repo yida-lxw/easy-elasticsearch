@@ -21,7 +21,7 @@ import cn.yzw.jc2.common.transfer.enums.VerifyTypeEnum;
 import cn.yzw.jc2.common.transfer.model.DTransferJobRequest;
 import cn.yzw.jc2.common.transfer.model.DTransferVerifyJobRequest;
 import cn.yzw.jc2.common.transfer.service.DTransferService;
-import cn.yzw.jc2.common.transfer.service.DataVerify;
+import cn.yzw.jc2.common.transfer.service.DataVerifyService;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -35,7 +35,7 @@ public class DTransferJob {
     @Resource
     private DTransferService dTransferService;
     @Resource
-    private DataVerify dataVerifyService;
+    private DataVerifyService dataVerifyService;
 
     /**
      * @Description: 全量数据迁移job

@@ -24,7 +24,8 @@ import cn.yzw.jc2.common.transfer.interceptor.SingleReadInterceptor;
 import cn.yzw.jc2.common.transfer.job.DTransferJob;
 import cn.yzw.jc2.common.transfer.model.DTransferDoubleWriteProperties;
 import cn.yzw.jc2.common.transfer.service.DTransferService;
-import cn.yzw.jc2.common.transfer.service.DataVerify;
+import cn.yzw.jc2.common.transfer.service.DataVerifyService;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -49,6 +50,7 @@ public class DTransferConfig {
     /**
      * 数据迁移总开关
      */
+    @Getter
     @Value("${dtransfer.double.writer.open:false}")
     private Boolean                                     open;
 
@@ -75,8 +77,8 @@ public class DTransferConfig {
     }
 
     @Bean("dataVerifyService")
-    public DataVerify DataVerifyService() {
-        return new DataVerify();
+    public DataVerifyService DataVerifyService() {
+        return new DataVerifyService();
     }
 
     @Bean
@@ -119,10 +121,6 @@ public class DTransferConfig {
         }
         return doubleWritePropertiesMap;
 
-    }
-
-    public Boolean getOpen() {
-        return open;
     }
 
     @ApolloConfigChangeListener({ "application", "dtransfer" })

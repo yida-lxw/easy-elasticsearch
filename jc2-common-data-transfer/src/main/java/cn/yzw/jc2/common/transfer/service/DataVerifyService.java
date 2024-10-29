@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
  * @Date: 2024/10/24
  **/
 @Slf4j(topic = "dtransfer")
-public class DataVerify extends AbstractDataTransferBase {
+public class DataVerifyService extends AbstractDataTransferBase {
 
     /**
      * @Description: 数据核对方法
