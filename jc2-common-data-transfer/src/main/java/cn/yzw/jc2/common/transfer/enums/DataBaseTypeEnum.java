@@ -1,4 +1,4 @@
-package cn.yzw.jc2.common.transfer.model;
+package cn.yzw.jc2.common.transfer.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

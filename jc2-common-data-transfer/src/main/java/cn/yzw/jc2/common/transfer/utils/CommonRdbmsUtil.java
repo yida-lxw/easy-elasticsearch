@@ -9,7 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.yzw.infra.component.base.exception.BusinessException;
 import cn.yzw.infra.component.utils.AssertUtils;
-import cn.yzw.jc2.common.transfer.model.DataBaseTypeEnum;
+import cn.yzw.jc2.common.transfer.enums.DataBaseTypeEnum;
 
 /**
  * @description: 读工具

@@ -7,7 +7,7 @@ import org.springframework.dao.DataAccessException;
 
 import cn.yzw.jc2.common.transfer.common.AbstractDataTransferBase;
 import cn.yzw.jc2.common.transfer.dao.DataTransferDao;
-import cn.yzw.jc2.common.transfer.model.DataBaseTypeEnum;
+import cn.yzw.jc2.common.transfer.enums.DataBaseTypeEnum;
 import cn.yzw.jc2.common.transfer.model.ReadRequest;
 import cn.yzw.jc2.common.transfer.model.WriteRequest;
 import cn.yzw.jc2.common.transfer.utils.CommonRdbmsUtil;
