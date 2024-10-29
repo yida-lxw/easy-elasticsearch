@@ -25,7 +25,7 @@ public interface DataTransferService {
      * @param table
      * @return
      */
-    Long getMaxId(String table);
+    Long getMaxId(String table, String dataSourceName);
 
     /**
      * 批量执行

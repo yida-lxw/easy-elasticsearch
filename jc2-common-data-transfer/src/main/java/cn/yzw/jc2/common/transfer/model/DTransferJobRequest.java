@@ -63,4 +63,9 @@ public class DTransferJobRequest implements Serializable {
     private String     jobId;
 
     private Boolean    ignoreId       = Boolean.TRUE;
+
+    /**
+     * 数据源名称，多数据源必须配置
+     */
+    private String     dataSourceName;
 }

@@ -38,7 +38,7 @@ public class DTransferFactory {
         if (CollectionUtil.isNotEmpty(request.getIdList())) {
             request.setEndId(Collections.max(request.getIdList()));
         } else if (Objects.isNull(request.getEndId())){
-            Long maxId = dataTransferService.getMaxId(request.getSourceTable());
+            Long maxId = dataTransferService.getMaxId(request.getSourceTable(), request.getDataSourceName());
             request.setEndId(maxId);
         }
         if (request.getEndId() < request.getStartId()) {
@@ -93,6 +93,7 @@ public class DTransferFactory {
                 readRequest.setLimit(request.getLimit());
                 readRequest.setQuerySql(request.getQuerySql());
                 readRequest.setDatasourceType(request.getDatasourceType());
+                readRequest.setDataSourceName(readRequest.getDataSourceName());
                 List<Map<String, Object>> dataList = dataTransferService.getDataList(readRequest);
 
                 //本批数据处理
@@ -126,6 +127,7 @@ public class DTransferFactory {
                 readRequest.setLimit(request.getLimit());
                 readRequest.setQuerySql(request.getQuerySql());
                 readRequest.setDatasourceType(request.getDatasourceType());
+                readRequest.setDataSourceName(readRequest.getDataSourceName());
                 List<Map<String, Object>> dataList = dataTransferService.getDataList(readRequest);
                 log.info("任务id为{}分段获取数据结束，获取到分段区间id为{}-{}，一共获取到数据量为：{}，查询花费时间为{}", request.getJobId(), executorStartId,
                     executorEndId, dataList.size(), System.currentTimeMillis() - startTime);
@@ -160,6 +162,7 @@ public class DTransferFactory {
             //分库分表前期逻辑表手动拼_NEW，因为双写与老表区分
             WriteRequest writeRequest = new WriteRequest();
             writeRequest.setTargetTable(request.getTargetTable());
+            writeRequest.setDataSourceName(request.getDataSourceName());
             List<String> columns = new ArrayList<>(dataList.get(0).keySet());
             List<String> valueHolders = new ArrayList<>(columns.size());
             for (int i = 0; i < columns.size(); i++) {
