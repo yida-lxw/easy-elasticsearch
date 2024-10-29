@@ -8,7 +8,7 @@ import org.springframework.dao.DataAccessException;
 import cn.yzw.jc2.common.transfer.model.DataBaseTypeEnum;
 import cn.yzw.jc2.common.transfer.model.ReadRequest;
 import cn.yzw.jc2.common.transfer.model.WriteRequest;
-import cn.yzw.jc2.common.transfer.service.AbstractDataTransferBaseService;
+import cn.yzw.jc2.common.transfer.common.AbstractDataTransferBaseService;
 import cn.yzw.jc2.common.transfer.service.DataTransferService;
 import cn.yzw.jc2.common.transfer.utils.CommonRdbmsUtil;
 import lombok.extern.slf4j.Slf4j;

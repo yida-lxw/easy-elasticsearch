@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import cn.yzw.jc2.common.transfer.common.AbstractDataTransferBaseService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.util.StopWatch;
 
@@ -34,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
  * @Date: 2024/10/24
  **/
 @Slf4j(topic = "dtransfer")
-public class DataVerifyService extends AbstractDataTransferBaseService{
+public class DataVerifyService extends AbstractDataTransferBaseService {
 
 
     /**

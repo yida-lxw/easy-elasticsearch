@@ -1,4 +1,4 @@
-package cn.yzw.jc2.common.transfer.service;
+package cn.yzw.jc2.common.transfer.common;
 
 import java.util.Arrays;
 
