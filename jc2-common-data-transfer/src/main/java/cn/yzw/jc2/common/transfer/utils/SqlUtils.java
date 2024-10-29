@@ -1,10 +1,12 @@
 package cn.yzw.jc2.common.transfer.utils;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import cn.yzw.infra.component.utils.AssertUtils;
+import cn.yzw.jc2.common.transfer.model.DTransferVerifyJobRequest;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
@@ -117,4 +119,19 @@ public class SqlUtils {
         return tablesNamesFinder.getTableList(statement);
     }
 
+    /**
+     * 按id分批查询
+     * @param request
+     * @return
+     */
+    public static String buildSql(DTransferVerifyJobRequest request) {
+        StringBuilder sb = new StringBuilder("select * from ").append(request.getOlbTable());
+        sb.append(" where id > ").append(request.getOlbTableStartId());
+        if (Objects.nonNull(request.getOlbTableEndId())) {
+            sb.append(" and id <= ").append(request.getOlbTableEndId());
+        }
+        sb.append(" limit ?");
+        String sql = sb.toString();
+        return sql;
+    }
 }

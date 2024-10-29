@@ -1,20 +1,26 @@
 package cn.yzw.jc2.common.transfer.job;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Resource;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.skywalking.apm.toolkit.trace.TraceContext;
-import org.springframework.context.ApplicationContext;
 
 import com.xxl.job.core.biz.model.ReturnT;
 import com.xxl.job.core.handler.annotation.XxlJob;
 import com.xxl.job.core.log.XxlJobLogger;
 
+import cn.yzw.infra.component.utils.AssertUtils;
 import cn.yzw.infra.component.utils.JsonUtils;
+import cn.yzw.jc2.common.transfer.enums.VerifyTypeEnum;
 import cn.yzw.jc2.common.transfer.factory.DTransferFactory;
 import cn.yzw.jc2.common.transfer.model.DTransferJobRequest;
+import cn.yzw.jc2.common.transfer.model.DTransferVerifyJobRequest;
+import cn.yzw.jc2.common.transfer.service.DataVerifyService;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -22,13 +28,13 @@ import lombok.extern.slf4j.Slf4j;
  * @Author: lbl
  * @Date: 2024/10/17
  **/
-@Slf4j
+@Slf4j(topic = "dtransfer")
 public class DTransferJob {
 
     @Resource
     private DTransferFactory dTransferFactory;
-
-    private ApplicationContext applicationContext;
+    @Resource
+    private DataVerifyService dataVerifyService;
 
     /**
      * @Description: 全量数据迁移job
@@ -73,10 +79,28 @@ public class DTransferJob {
     public ReturnT checkDataJob(String paramStr) {
         XxlJobLogger.log(TraceContext.traceId());
         log.info("params: {}", paramStr);
-        ReturnT res = new ReturnT();
-
+        ReturnT res = ReturnT.SUCCESS;
         try {
-
+            DTransferVerifyJobRequest request = JsonUtils.readAsObject(paramStr, DTransferVerifyJobRequest.class);
+            AssertUtils.notNull(request, "入参不能为空");
+            AssertUtils.notBlank(request.getOlbTable(), "老表名不能为空");
+            AssertUtils.notNull(request.getNewTable(), "新表参数不能为空");
+            AssertUtils.notBlank(request.getNewTable().getNewTableLogicName(), "新表逻辑表名不能为空");
+            AssertUtils.notBlank(request.getNewTable().getNewTableRealNamePrefix(), "新表真实表名前缀不能为空");
+            AssertUtils.notNull(request.getNewTable().getNewTableShardNum(), "新表分片数不能为空");
+            AssertUtils.notBlank(request.getShardingKeyName(), "分片键不能为空");
+            AssertUtils.notBlank(request.getPrimaryKeyName(), "唯一主键不能为空");
+            if (request.getOlbTableStartId() == null) {
+                request.setOlbTableStartId(Long.MIN_VALUE);
+            }
+            if (StringUtils.isBlank(request.getVerifyType())) {
+                request.setVerifyType(VerifyTypeEnum.COMPARE_ALL.name());
+            }
+            if (CollectionUtils.isEmpty(request.getColumns()) && CollectionUtils.isEmpty(request.getIgnoreColumns())) {
+                List<String> ignoreColumns = Arrays.asList("id", "update_time", "create_time");
+                request.setIgnoreColumns(ignoreColumns);
+            }
+            dataVerifyService.verifyData(request);
         } catch (Exception ex) {
             log.error("定时任务checkDataJob执行时出现异常", ex);
             res = ReturnT.FAIL;
@@ -85,4 +109,5 @@ public class DTransferJob {
         }
         return res;
     }
+
 }
