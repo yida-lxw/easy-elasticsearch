@@ -144,7 +144,7 @@ public class DataVerifyService {
         for (int i = newTable.getNewTableStartShardNum() == null ? 0 : newTable.getNewTableStartShardNum(); i < newTable
             .getNewTableShardNum(); i++) {
             String realTableName = newTable.getNewTableRealNamePrefix() + i;
-            log.info("基于新表{}开始", realTableName);
+            log.info("基于新表{}核对开始", realTableName);
             AtomicLong id = new AtomicLong(Long.MIN_VALUE);
             if (threadNum > 1) {
                 List<Future> tasks = new ArrayList<>(threadNum);
@@ -161,7 +161,7 @@ public class DataVerifyService {
             } else {
                 queryAndDeal(request, response, realTableName, id);
             }
-            log.info("基于新表{}结束", realTableName);
+            log.info("基于新表{}核对结束", realTableName);
         }
         stopWatch.stop();
         log.info("基于新表数据核对结束，核对数据{}条，删除新表数据{}条,总计耗时{}毫秒", response.getVerifyNewTableCount(),
