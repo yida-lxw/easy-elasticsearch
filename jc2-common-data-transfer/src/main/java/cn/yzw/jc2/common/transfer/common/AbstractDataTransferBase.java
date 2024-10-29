@@ -33,7 +33,7 @@ public abstract class AbstractDataTransferBase {
                 this.jdbcTemplate = new JdbcTemplate(SpringContextUtils.getBean(beanNames[0]));
             } else {
                 AssertUtils.notBlank(dataSourceName, "数据源名称不能为空");
-                AssertUtils.isTrue(Arrays.stream(beanNames).anyMatch(e -> dataSourceName.equals(e)), "未匹配到数据源");
+                AssertUtils.isTrue(Arrays.asList(beanNames).contains(dataSourceName), "未匹配到数据源");
                 this.jdbcTemplate = new JdbcTemplate(SpringContextUtils.getBean(dataSourceName));
             }
         }
