@@ -10,6 +10,11 @@ import cn.yzw.infra.component.utils.AssertUtils;
 import cn.yzw.infra.component.utils.SpringContextUtils;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * @Description: 迁移基类
+ * @Author: lbl
+ * @Date: 2024/10/29
+ **/
 @Slf4j(topic = "dtransfer")
 public abstract class AbstractDataTransferBase {
     protected JdbcTemplate jdbcTemplate;
