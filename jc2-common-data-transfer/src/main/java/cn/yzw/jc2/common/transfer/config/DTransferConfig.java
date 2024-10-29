@@ -22,6 +22,7 @@ import cn.yzw.jc2.common.transfer.factory.DTransferFactory;
 import cn.yzw.jc2.common.transfer.interceptor.DoubleWriteInterceptor;
 import cn.yzw.jc2.common.transfer.interceptor.SingleReadInterceptor;
 import cn.yzw.jc2.common.transfer.job.DTransferJob;
+import cn.yzw.jc2.common.transfer.service.DataVerifyService;
 import cn.yzw.jc2.common.transfer.service.impl.DataTransferServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 
@@ -70,6 +71,11 @@ public class DTransferConfig {
     @Bean("dTransferJob")
     public DTransferJob dTransferJob() {
         return new DTransferJob();
+    }
+
+    @Bean("dataVerifyService")
+    public DataVerifyService DataVerifyService() {
+        return new DataVerifyService();
     }
 
     @Bean
