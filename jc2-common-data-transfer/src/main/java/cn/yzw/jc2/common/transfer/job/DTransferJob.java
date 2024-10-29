@@ -6,6 +6,7 @@ import java.util.Objects;
 
 import javax.annotation.Resource;
 
+import cn.yzw.jc2.common.transfer.service.DTransferService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.skywalking.apm.toolkit.trace.TraceContext;
@@ -17,11 +18,11 @@ import com.xxl.job.core.log.XxlJobLogger;
 import cn.hutool.core.util.IdUtil;
 import cn.yzw.infra.component.utils.AssertUtils;
 import cn.yzw.infra.component.utils.JsonUtils;
+import cn.yzw.jc2.common.transfer.service.DataVerifyService;
 import cn.yzw.jc2.common.transfer.enums.VerifyTypeEnum;
-import cn.yzw.jc2.common.transfer.factory.DTransferFactory;
 import cn.yzw.jc2.common.transfer.model.DTransferJobRequest;
 import cn.yzw.jc2.common.transfer.model.DTransferVerifyJobRequest;
-import cn.yzw.jc2.common.transfer.service.DataVerifyService;
+import cn.yzw.jc2.common.transfer.service.DTransferFactory;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -33,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 public class DTransferJob {
 
     @Resource
-    private DTransferFactory dTransferFactory;
+    private DTransferService dTransferService;
     @Resource
     private DataVerifyService dataVerifyService;
 
@@ -62,7 +63,7 @@ public class DTransferJob {
             params, request, request.getJobId());
         try {
             long startTime = System.currentTimeMillis();
-            dTransferFactory.execute(request);
+            dTransferService.execute(request);
             log.info("本次任务id为{}-表{}迁移任务执行耗时{}", request.getJobId(), request.getSourceTable(),
                 System.currentTimeMillis() - startTime);
             return new ReturnT<>(ReturnT.SUCCESS_CODE, "执行完成，任务id" + request.getJobId());

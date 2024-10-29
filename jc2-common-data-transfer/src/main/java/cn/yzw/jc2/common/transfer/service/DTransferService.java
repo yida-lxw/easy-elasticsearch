@@ -1,4 +1,4 @@
-package cn.yzw.jc2.common.transfer.factory;
+package cn.yzw.jc2.common.transfer.service;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,10 +16,10 @@ import javax.annotation.Resource;
 import org.springframework.util.CollectionUtils;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.yzw.jc2.common.transfer.dao.DataTransferDao;
 import cn.yzw.jc2.common.transfer.model.DTransferJobRequest;
 import cn.yzw.jc2.common.transfer.model.ReadRequest;
 import cn.yzw.jc2.common.transfer.model.WriteRequest;
-import cn.yzw.jc2.common.transfer.service.DataTransferService;
 import cn.yzw.jc2.common.transfer.utils.CommonRdbmsUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,10 +29,10 @@ import lombok.extern.slf4j.Slf4j;
  * @author yl
  */
 @Slf4j
-public class DTransferFactory {
+public class DTransferService {
 
     @Resource
-    private DataTransferService dataTransferService;
+    private DataTransferDao dataTransferService;
 
     public void execute(DTransferJobRequest request) {
         if (CollectionUtil.isNotEmpty(request.getIdList())) {

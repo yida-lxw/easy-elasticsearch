@@ -18,13 +18,13 @@ import com.ctrip.framework.apollo.spring.annotation.ApolloConfigChangeListener;
 
 import cn.yzw.infra.component.utils.AssertUtils;
 import cn.yzw.infra.component.utils.JsonUtils;
-import cn.yzw.jc2.common.transfer.factory.DTransferFactory;
+import cn.yzw.jc2.common.transfer.dao.impl.DataTransferDaoImpl;
 import cn.yzw.jc2.common.transfer.interceptor.DoubleWriteInterceptor;
 import cn.yzw.jc2.common.transfer.interceptor.SingleReadInterceptor;
 import cn.yzw.jc2.common.transfer.job.DTransferJob;
 import cn.yzw.jc2.common.transfer.model.DTransferDoubleWriteProperties;
+import cn.yzw.jc2.common.transfer.service.DTransferService;
 import cn.yzw.jc2.common.transfer.service.DataVerifyService;
-import cn.yzw.jc2.common.transfer.service.impl.DataTransferServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -59,14 +59,14 @@ public class DTransferConfig {
     private Config                                      config;
 
 
-    @Bean("dataTransferService")
-    public DataTransferServiceImpl dataTransferService() {
-        return new DataTransferServiceImpl();
+    @Bean("dataTransferDao")
+    public DataTransferDaoImpl dataTransferService() {
+        return new DataTransferDaoImpl();
     }
 
-    @Bean("dTransferFactory")
-    public DTransferFactory dTransferFactory() {
-        return new DTransferFactory();
+    @Bean("dTransferService")
+    public DTransferService dTransferFactory() {
+        return new DTransferService();
     }
 
     @Bean("dTransferJob")

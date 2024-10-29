@@ -1,4 +1,4 @@
-package cn.yzw.jc2.common.transfer.service;
+package cn.yzw.jc2.common.transfer.dao;
 
 import java.util.List;
 import java.util.Map;
@@ -11,7 +11,7 @@ import cn.yzw.jc2.common.transfer.model.WriteRequest;
  * @author: yangle
  * @date: 2024/10/18
  **/
-public interface DataTransferService {
+public interface DataTransferDao {
 
     /**
      * 读取列
