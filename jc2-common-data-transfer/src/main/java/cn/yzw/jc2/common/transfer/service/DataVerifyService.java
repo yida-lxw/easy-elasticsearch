@@ -2,7 +2,6 @@ package cn.yzw.jc2.common.transfer.service;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -18,14 +17,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.sql.DataSource;
-
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.StopWatch;
 
-import cn.yzw.infra.component.utils.AssertUtils;
-import cn.yzw.infra.component.utils.SpringContextUtils;
 import cn.yzw.jc2.common.transfer.enums.VerifyTypeEnum;
 import cn.yzw.jc2.common.transfer.model.DTransferVerifyJobRequest;
 import cn.yzw.jc2.common.transfer.model.DTransferVerifyJobResponse;
@@ -40,30 +34,8 @@ import lombok.extern.slf4j.Slf4j;
  * @Date: 2024/10/24
  **/
 @Slf4j(topic = "dtransfer")
-public class DataVerifyService {
-    private JdbcTemplate jdbcTemplate;
+public class DataVerifyService extends AbstractDataTransferBaseService{
 
-    private void init(DTransferVerifyJobRequest request) {
-        if (jdbcTemplate != null) {
-            return;
-        }
-        synchronized (this) {
-            if (jdbcTemplate != null) {
-                return;
-            }
-            String[] beanNames = SpringContextUtils.getApplicationContext().getBeanNamesForType(DataSource.class);
-            AssertUtils.notEmpty(beanNames, "未获取到数据源");
-            if (beanNames.length == 1) {
-                this.jdbcTemplate = new JdbcTemplate(SpringContextUtils.getBean(beanNames[0]));
-            } else {
-                AssertUtils.notBlank(request.getDataSourceName(), "数据源名称不能为空");
-                AssertUtils.isTrue(Arrays.stream(beanNames).anyMatch(e -> request.getDataSourceName().equals(e)),
-                    "未匹配到数据源");
-                this.jdbcTemplate = new JdbcTemplate(SpringContextUtils.getBean(request.getDataSourceName()));
-            }
-        }
-
-    }
 
     /**
      * 通用数据核对方法
@@ -75,7 +47,7 @@ public class DataVerifyService {
      * @param shardingKey 分片键列，用于新表的查询
      */
     public DTransferVerifyJobResponse verifyData(DTransferVerifyJobRequest request) {
-        init(request);
+        initJdbcTemplate(request.getDataSourceName());
         DTransferVerifyJobResponse response = new DTransferVerifyJobResponse(new AtomicLong(0), new AtomicLong(0), 0L,
             0L);
         ThreadPoolMdcWrapperExecutor executor = creatThreadPool(request);

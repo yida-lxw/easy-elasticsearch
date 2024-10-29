@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import cn.yzw.jc2.common.transfer.model.DTransferDoubleWriteProperties;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +22,7 @@ import cn.yzw.jc2.common.transfer.factory.DTransferFactory;
 import cn.yzw.jc2.common.transfer.interceptor.DoubleWriteInterceptor;
 import cn.yzw.jc2.common.transfer.interceptor.SingleReadInterceptor;
 import cn.yzw.jc2.common.transfer.job.DTransferJob;
+import cn.yzw.jc2.common.transfer.model.DTransferDoubleWriteProperties;
 import cn.yzw.jc2.common.transfer.service.DataVerifyService;
 import cn.yzw.jc2.common.transfer.service.impl.DataTransferServiceImpl;
 import lombok.extern.slf4j.Slf4j;

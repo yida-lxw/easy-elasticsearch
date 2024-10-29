@@ -1,19 +1,14 @@
 package cn.yzw.jc2.common.transfer.service.impl;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import javax.sql.DataSource;
-
 import org.springframework.dao.DataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
 
-import cn.yzw.infra.component.utils.AssertUtils;
-import cn.yzw.infra.component.utils.SpringContextUtils;
 import cn.yzw.jc2.common.transfer.model.DataBaseTypeEnum;
 import cn.yzw.jc2.common.transfer.model.ReadRequest;
 import cn.yzw.jc2.common.transfer.model.WriteRequest;
+import cn.yzw.jc2.common.transfer.service.AbstractDataTransferBaseService;
 import cn.yzw.jc2.common.transfer.service.DataTransferService;
 import cn.yzw.jc2.common.transfer.utils.CommonRdbmsUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -23,32 +18,8 @@ import lombok.extern.slf4j.Slf4j;
  * @author: yangle
  * @date: 2024/10/21
  **/
-@Slf4j
-public class DataTransferServiceImpl implements DataTransferService {
-
-    private JdbcTemplate jdbcTemplate;
-
-    private void initJdbcTemplate(String dataSourceName) {
-        if (jdbcTemplate != null) {
-            return;
-        }
-        synchronized (this) {
-            if (jdbcTemplate != null) {
-                return;
-            }
-            String[] beanNames = SpringContextUtils.getApplicationContext().getBeanNamesForType(DataSource.class);
-            AssertUtils.notEmpty(beanNames, "未获取到数据源");
-            if (beanNames.length == 1) {
-                this.jdbcTemplate = new JdbcTemplate(SpringContextUtils.getBean(beanNames[0]));
-            } else {
-                AssertUtils.notBlank(dataSourceName, "数据源名称不能为空");
-                AssertUtils.isTrue(Arrays.stream(beanNames).anyMatch(e -> dataSourceName.equals(e)),
-                    "未匹配到数据源");
-                this.jdbcTemplate = new JdbcTemplate(SpringContextUtils.getBean(dataSourceName));
-            }
-        }
-
-    }
+@Slf4j(topic = "dtransfer")
+public class DataTransferServiceImpl extends AbstractDataTransferBaseService implements DataTransferService {
 
     @Override
     public List<Map<String, Object>> getDataList(ReadRequest request) {
