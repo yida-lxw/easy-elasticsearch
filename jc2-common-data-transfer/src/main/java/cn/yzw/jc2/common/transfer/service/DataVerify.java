@@ -17,10 +17,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import cn.yzw.jc2.common.transfer.common.AbstractDataTransferBase;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.util.StopWatch;
 
+import cn.yzw.jc2.common.transfer.common.AbstractDataTransferBase;
 import cn.yzw.jc2.common.transfer.enums.VerifyTypeEnum;
 import cn.yzw.jc2.common.transfer.model.DTransferVerifyJobRequest;
 import cn.yzw.jc2.common.transfer.model.DTransferVerifyJobResponse;
@@ -37,27 +37,25 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j(topic = "dtransfer")
 public class DataVerify extends AbstractDataTransferBase {
 
-
     /**
-     * 通用数据核对方法
-     *
-     * @param oldTable    老表名
-     * @param newTable    新表名
-     * @param columns     要核对的列
-     * @param primaryKey  主键列，用于匹配记录
-     * @param shardingKey 分片键列，用于新表的查询
-     */
+     * @Description: 数据核对方法
+     * @Author: lbl 
+     * @Date:  2024/10/29 15:56
+     * @param:
+     * @return:
+     **/
     public DTransferVerifyJobResponse verifyData(DTransferVerifyJobRequest request) {
         initJdbcTemplate(request.getDataSourceName());
         DTransferVerifyJobResponse response = new DTransferVerifyJobResponse(new AtomicLong(0), new AtomicLong(0), 0L,
             0L);
         ThreadPoolMdcWrapperExecutor executor = creatThreadPool(request);
-        //分配线程数
+        //是否分配线程
         boolean splitPoolSize = !VerifyTypeEnum.COMPARE_NEW_TABLE_BY_OLD_TABLE.name()
             .equalsIgnoreCase(request.getVerifyType())
                                 || !VerifyTypeEnum.COMPARE_OLD_TABLE_BY_NEW_TABLE.name()
                                     .equalsIgnoreCase(request.getVerifyType());
 
+        //基于老表对新表的字段一致性进行比较，不一致，更新新表数据
         if (VerifyTypeEnum.COMPARE_ALL.name().equals(request.getVerifyType())
             || VerifyTypeEnum.COMPARE_NEW_TABLE_BY_OLD_TABLE.name().equalsIgnoreCase(request.getVerifyType())) {
             int threadNum;
@@ -69,6 +67,7 @@ public class DataVerify extends AbstractDataTransferBase {
             }
             executor.execute(() -> verifyDataForUpdateNewTableByOldTable(request, response, executor, threadNum));
         }
+        //基于新表查询数据在老表是否存在，不存在则删除新表数据
         if (VerifyTypeEnum.COMPARE_ALL.name().equals(request.getVerifyType())
             || VerifyTypeEnum.COMPARE_OLD_TABLE_BY_NEW_TABLE.name().equalsIgnoreCase(request.getVerifyType())) {
             int threadNum;
@@ -248,15 +247,12 @@ public class DataVerify extends AbstractDataTransferBase {
     //    }
 
     /**
-     * 基于老表对新表的字段一致性进行比较，不一致，更新新表数据
-     *
-     * @param newTable    新表名
-     * @param columns     要核对的列
-     * @param primaryKey  主键列
-     * @param shardingKey 分片键列
-     * @param oldRows     老表数据
-     * @param response
-     */
+     * @Description: 基于老表对新表的字段一致性进行比较，不一致，更新新表数据
+     * @Author: lbl 
+     * @Date:  2024/10/29 15:57
+     * @param:
+     * @return:
+     **/
     private void existOldTableRows(List<Map<String, Object>> newRows, DTransferVerifyJobRequest request,
                                    DTransferVerifyJobResponse response, String realTableName) {
         // 创建查询条件的 Map，方便批量查询
@@ -264,8 +260,9 @@ public class DataVerify extends AbstractDataTransferBase {
             .collect(Collectors.toSet());
 
         // 生成 SQL 查询语句
-        String sql = String.format("SELECT %s FROM %s WHERE %s IN (%s)", request.getPrimaryKeyName(), request.getOlbTable(),
-            request.getPrimaryKeyName(), String.join(",", Collections.nCopies(primaryValues.size(), "?")));
+        String sql = String.format("SELECT %s FROM %s WHERE %s IN (%s)", request.getPrimaryKeyName(),
+            request.getOlbTable(), request.getPrimaryKeyName(),
+            String.join(",", Collections.nCopies(primaryValues.size(), "?")));
 
         // 批量查询新表数据
         List<Map<String, Object>> oldRows = jdbcTemplate.queryForList(sql, primaryValues.toArray());
@@ -280,7 +277,8 @@ public class DataVerify extends AbstractDataTransferBase {
             if (!oldPrimaryValueSet.contains(primaryKeyValue)) {
                 log.info("老表中无主键值为{}的记录", primaryKeyValue);
                 // 执行删除操作
-                String updateSql = String.format("DELETE FROM %s WHERE %s = ?", realTableName, request.getPrimaryKeyName());
+                String updateSql = String.format("DELETE FROM %s WHERE %s = ?", realTableName,
+                    request.getPrimaryKeyName());
                 jdbcTemplate.update(updateSql, primaryKeyValue);
                 response.getVerifyDelCount().getAndIncrement();
                 log.info(String.format("已删除新表%s中主键为 %s 的记录", realTableName, primaryKeyValue));
@@ -361,15 +359,12 @@ public class DataVerify extends AbstractDataTransferBase {
     }
 
     /**
-     * 比较老表和新表的两组数据
-     *
-     * @param newTable    新表名
-     * @param columns     要核对的列
-     * @param primaryKey  主键列
-     * @param shardingKey 分片键列
-     * @param oldRows     老表数据
-     * @param response
-     */
+     * @Description: 比较老表和新表的两组数据
+     * @Author: lbl 
+     * @Date:  2024/10/29 15:57
+     * @param:
+     * @return:
+     **/
     private void compareRows(List<Map<String, Object>> oldRows, DTransferVerifyJobRequest request,
                              DTransferVerifyJobResponse response) {
         // 创建查询条件的 Map，方便批量查询
