@@ -27,7 +27,7 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import cn.yzw.jc2.common.transfer.config.DTransferConfig;
-import cn.yzw.jc2.common.transfer.config.DTransferDoubleWriteProperties;
+import cn.yzw.jc2.common.transfer.model.DTransferDoubleWriteProperties;
 import cn.yzw.jc2.common.transfer.enums.WriteTypeEnum;
 import cn.yzw.jc2.common.transfer.utils.SqlUtils;
 import lombok.extern.slf4j.Slf4j;

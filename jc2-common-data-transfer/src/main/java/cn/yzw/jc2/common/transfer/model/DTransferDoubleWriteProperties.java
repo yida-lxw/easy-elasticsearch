@@ -1,4 +1,4 @@
-package cn.yzw.jc2.common.transfer.config;
+package cn.yzw.jc2.common.transfer.model;
 
 import lombok.Data;
 

@@ -22,7 +22,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import cn.yzw.jc2.common.transfer.config.DTransferConfig;
-import cn.yzw.jc2.common.transfer.config.DTransferDoubleWriteProperties;
+import cn.yzw.jc2.common.transfer.model.DTransferDoubleWriteProperties;
 import cn.yzw.jc2.common.transfer.enums.ReadeTypeEnum;
 import cn.yzw.jc2.common.transfer.enums.WriteTypeEnum;
 import cn.yzw.jc2.common.transfer.utils.PluginUtils;
