@@ -32,13 +32,13 @@ import lombok.extern.slf4j.Slf4j;
 public class DTransferService {
 
     @Resource
-    private DataTransferDao dataTransferService;
+    private DataTransferDao dataTransferDao;
 
     public void execute(DTransferJobRequest request) {
         if (CollectionUtil.isNotEmpty(request.getIdList())) {
             request.setEndId(Collections.max(request.getIdList()));
         } else if (Objects.isNull(request.getEndId())){
-            Long maxId = dataTransferService.getMaxId(request.getSourceTable(), request.getDataSourceName());
+            Long maxId = dataTransferDao.getMaxId(request.getSourceTable(), request.getDataSourceName());
             request.setEndId(maxId);
         }
         if (request.getEndId() < request.getStartId()) {
@@ -94,7 +94,7 @@ public class DTransferService {
                 readRequest.setQuerySql(request.getQuerySql());
                 readRequest.setDatasourceType(request.getDatasourceType());
                 readRequest.setDataSourceName(readRequest.getDataSourceName());
-                List<Map<String, Object>> dataList = dataTransferService.getDataList(readRequest);
+                List<Map<String, Object>> dataList = dataTransferDao.getDataList(readRequest);
 
                 //本批数据处理
                 if (CollectionUtils.isEmpty(dataList)) {
@@ -128,7 +128,7 @@ public class DTransferService {
                 readRequest.setQuerySql(request.getQuerySql());
                 readRequest.setDatasourceType(request.getDatasourceType());
                 readRequest.setDataSourceName(readRequest.getDataSourceName());
-                List<Map<String, Object>> dataList = dataTransferService.getDataList(readRequest);
+                List<Map<String, Object>> dataList = dataTransferDao.getDataList(readRequest);
                 log.info("任务id为{}分段获取数据结束，获取到分段区间id为{}-{}，一共获取到数据量为：{}，查询花费时间为{}", request.getJobId(), executorStartId,
                     executorEndId, dataList.size(), System.currentTimeMillis() - startTime);
                 //本批数据处理
@@ -177,7 +177,7 @@ public class DTransferService {
             writeRequest.setWriteTemplate(writeTemplate);
             writeRequest.setParams(params);
             writeRequest.setJobId(request.getJobId());
-            dataTransferService.doBatchInsert(writeRequest);
+            dataTransferDao.doBatchInsert(writeRequest);
         } catch (Exception e) {
             log.error("data-sync-error: 同步异常.任务id为{}，表名为{}，数据为{}", request.getJobId(), request.getSourceTable(), dataList, e);
         }
