@@ -46,4 +46,9 @@ public class ReadRequest implements Serializable {
      * 数据库类型
      */
     private String     datasourceType = "MySql";
+
+    /**
+     * 数据源名称，多数据源必须配置
+     */
+    private String     dataSourceName;
 }

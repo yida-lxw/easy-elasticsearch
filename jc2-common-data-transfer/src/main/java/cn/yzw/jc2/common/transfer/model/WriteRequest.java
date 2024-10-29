@@ -32,4 +32,9 @@ public class WriteRequest implements Serializable {
      * 新表名
      */
     private String         targetTable;
+
+    /**
+     * 数据源名称，多数据源必须配置
+     */
+    private String         dataSourceName;
 }
