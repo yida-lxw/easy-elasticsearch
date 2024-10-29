@@ -3,8 +3,7 @@ package cn.yzw.jc2.common.transfer.service.impl;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Resource;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -23,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DataTransferServiceImpl implements DataTransferService {
 
-    @Resource
+    @Autowired(required = false)
     private JdbcTemplate                 jdbcTemplate;
 
     @Override
