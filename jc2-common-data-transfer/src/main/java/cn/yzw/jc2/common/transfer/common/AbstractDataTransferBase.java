@@ -11,7 +11,7 @@ import cn.yzw.infra.component.utils.SpringContextUtils;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j(topic = "dtransfer")
-public abstract class AbstractDataTransferBaseService {
+public abstract class AbstractDataTransferBase {
     protected JdbcTemplate jdbcTemplate;
 
     protected void initJdbcTemplate(String dataSourceName) {

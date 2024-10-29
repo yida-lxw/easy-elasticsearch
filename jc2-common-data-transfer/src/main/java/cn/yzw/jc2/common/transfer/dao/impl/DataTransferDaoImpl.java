@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.springframework.dao.DataAccessException;
 
-import cn.yzw.jc2.common.transfer.common.AbstractDataTransferBaseService;
+import cn.yzw.jc2.common.transfer.common.AbstractDataTransferBase;
 import cn.yzw.jc2.common.transfer.dao.DataTransferDao;
 import cn.yzw.jc2.common.transfer.model.DataBaseTypeEnum;
 import cn.yzw.jc2.common.transfer.model.ReadRequest;
@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
  * @date: 2024/10/21
  **/
 @Slf4j(topic = "dtransfer")
-public class DataTransferDaoImpl extends AbstractDataTransferBaseService implements DataTransferDao {
+public class DataTransferDaoImpl extends AbstractDataTransferBase implements DataTransferDao {
 
     @Override
     public List<Map<String, Object>> getDataList(ReadRequest request) {
