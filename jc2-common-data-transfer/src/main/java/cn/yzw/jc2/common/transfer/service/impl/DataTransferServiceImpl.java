@@ -7,10 +7,6 @@ import javax.annotation.Resource;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
 
 import cn.yzw.jc2.common.transfer.model.DataBaseTypeEnum;
 import cn.yzw.jc2.common.transfer.model.ReadRequest;
@@ -27,14 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DataTransferServiceImpl implements DataTransferService {
 
-    @Resource(name = "transferReadJdbcTemplate")
-    private JdbcTemplate                 transferReadJdbcTemplate;
-
-    @Resource(name = "transferWriteJdbcTemplate")
-    private JdbcTemplate                 transferWriteJdbcTemplate;
-
     @Resource
-    private DataSourceTransactionManager dataSourceTransactionManager;
+    private JdbcTemplate                 jdbcTemplate;
 
     @Override
     public List<Map<String, Object>> getDataList(ReadRequest request) {
@@ -42,31 +32,23 @@ public class DataTransferServiceImpl implements DataTransferService {
         String sql = CommonRdbmsUtil.buildSqlLimit(DataBaseTypeEnum.valueOf(request.getDatasourceType()),
             request.getTable(), request.getQuerySql(), request.getStartId(), request.getEndId(), request.getIdList(),
             request.getLimit());
-        return transferReadJdbcTemplate.queryForList(sql);
+        return jdbcTemplate.queryForList(sql);
     }
 
     @Override
     public Long getMaxId(String table) {
         String sql = "select max(id) from " + table;
-        return transferReadJdbcTemplate.queryForObject(sql, Long.class);
+        return jdbcTemplate.queryForObject(sql, Long.class);
     }
 
     @Override
     public void doBatchInsert(WriteRequest writeRequest) {
-        TransactionStatus transactionStatus = null;
         try {
-            DefaultTransactionDefinition def = new DefaultTransactionDefinition();
-            def.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
-            transactionStatus = dataSourceTransactionManager.getTransaction(def);
-            int[] ints = transferWriteJdbcTemplate.batchUpdate(writeRequest.getWriteTemplate(),
+            int[] ints = jdbcTemplate.batchUpdate(writeRequest.getWriteTemplate(),
                 writeRequest.getParams());
-            dataSourceTransactionManager.commit(transactionStatus);
             log.info("任务id为{}批量写入成功,需写入条数为{},成功条数为{}", writeRequest.getJobId(), writeRequest.getParams().size(),
                 ints.length);
         } catch (DataAccessException e) {
-            if (transactionStatus != null) {
-                dataSourceTransactionManager.rollback(transactionStatus);
-            }
             log.error("任务id为{}批量写入失败，转换为单条执行，原因为", writeRequest.getJobId(), e);
             doOneInsert(writeRequest);
         } catch (Exception e) {
@@ -79,7 +61,7 @@ public class DataTransferServiceImpl implements DataTransferService {
     public void doOneInsert(WriteRequest writeRequest) {
         for (Object[] param : writeRequest.getParams()) {
             try {
-                transferWriteJdbcTemplate.update(writeRequest.getWriteTemplate(), param);
+                jdbcTemplate.update(writeRequest.getWriteTemplate(), param);
             } catch (Exception e) {
                 log.error("任务id为{}写入失败，执行sql模版{}，执行参数{}，原因为", writeRequest.getJobId(), writeRequest.getWriteTemplate(),
                     param, e);

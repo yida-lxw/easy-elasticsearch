@@ -18,7 +18,12 @@ public class DTransferJobRequest implements Serializable {
     /**
      * 表名
      */
-    private String     table;
+    private String     sourceTable;
+
+    /**
+     * 新表
+     */
+    private String     targetTable;
 
     /**
      * 开始值，可空
@@ -55,11 +60,7 @@ public class DTransferJobRequest implements Serializable {
      */
     private String     datasourceType = "MySql";
 
-    private Long       maxId;
-
-    private Long       jobId;
+    private String     jobId;
 
     private Boolean    ignoreId       = Boolean.TRUE;
-
-    private Boolean    sharding       = Boolean.TRUE;
 }

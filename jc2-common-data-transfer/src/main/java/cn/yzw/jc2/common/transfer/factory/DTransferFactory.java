@@ -9,20 +9,18 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Resource;
 
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.CollectionUtils;
 
 import cn.hutool.core.collection.CollectionUtil;
-import cn.yzw.jc2.common.transfer.config.DataSourceConfig;
 import cn.yzw.jc2.common.transfer.model.DTransferJobRequest;
 import cn.yzw.jc2.common.transfer.model.ReadRequest;
 import cn.yzw.jc2.common.transfer.model.WriteRequest;
 import cn.yzw.jc2.common.transfer.service.DataTransferService;
 import cn.yzw.jc2.common.transfer.utils.CommonRdbmsUtil;
-import jodd.util.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -34,46 +32,30 @@ import lombok.extern.slf4j.Slf4j;
 public class DTransferFactory {
 
     @Resource
-    private StringRedisTemplate stringRedisTemplate;
-
-    @Resource
     private DataTransferService dataTransferService;
 
-    @Resource
-    private DataSourceConfig    dataSourceConfig;
-
-    private static final String SHARDING_TABLE_SUFFIX = "_NEW";
-
-    private static final String CACHE_KEY_PRE         = "DTRANSFER:";
-
-    public void consumer(DTransferJobRequest request) {
-        //这里会自动分到ppfs是否可以去掉appname
-        if (Objects.nonNull(request.getEndId()) && request.getEndId() != 0) {
-            request.setMaxId(request.getMaxId());
-        } else if (CollectionUtil.isNotEmpty(request.getIdList())) {
-            request.setMaxId(Collections.max(request.getIdList()));
-        } else {
-            Long maxId = dataTransferService.getMaxId(request.getTable());
-            request.setMaxId(maxId);
+    public void execute(DTransferJobRequest request) {
+        if (CollectionUtil.isNotEmpty(request.getIdList())) {
+            request.setEndId(Collections.max(request.getIdList()));
+        } else if (Objects.isNull(request.getEndId())){
+            Long maxId = dataTransferService.getMaxId(request.getSourceTable());
+            request.setEndId(maxId);
         }
-        if (request.getMaxId() < request.getStartId()) {
-            log.info("任务id为{}结束，因为开始id超过最大id", request.getJobId());
+        if (request.getEndId() < request.getStartId()) {
+            log.info("任务id为{}结束，因为开始id超过结束id", request.getJobId());
             return;
         }
         if (request.getThreadCount() != null && request.getThreadCount() > 1) {
-            //初始化分片字段
-            String cacheKey = CACHE_KEY_PRE + dataSourceConfig.getAppName() + ":" + request.getTable() + ":"
-                              + request.getJobId();
-            stringRedisTemplate.opsForValue().set(cacheKey, request.getStartId().toString());
             ExecutorService pool = null;
             try {
+                AtomicLong loop = new AtomicLong(request.getStartId());
                 int threadNum = Math.min(request.getThreadCount(), 10);
                 pool = Executors.newFixedThreadPool(threadNum);
                 List<Future> tasks = new ArrayList<>(threadNum);
                 long startTime = System.currentTimeMillis();
                 log.info("任务id{}分片执行开始，分片数量为{}", request.getJobId(), threadNum);
                 for (int i = 0; i < threadNum; i++) {
-                    tasks.add(pool.submit(() -> executorLock(request)));
+                    tasks.add(pool.submit(() -> concurrentExecute(request, loop)));
                 }
                 tasks.forEach(e -> {
                     try {
@@ -91,21 +73,20 @@ public class DTransferFactory {
                 if (Objects.nonNull(pool)) {
                     pool.shutdownNow();
                 }
-                stringRedisTemplate.delete(cacheKey);
             }
         } else {
             log.info("任务id{}串行执行", request.getJobId());
-            executorNoLock(request);
+            serialExecute(request);
         }
 
     }
 
-    private void executorNoLock(DTransferJobRequest request) {
+    private void serialExecute(DTransferJobRequest request) {
         while (true) {
             try {
                 //批量查询
                 ReadRequest readRequest = new ReadRequest();
-                readRequest.setTable(request.getTable());
+                readRequest.setTable(request.getSourceTable());
                 readRequest.setStartId(request.getStartId());
                 readRequest.setEndId(request.getEndId());
                 readRequest.setIdList(request.getIdList());
@@ -126,39 +107,26 @@ public class DTransferFactory {
         }
     }
 
-    private void executorLock(DTransferJobRequest request) {
-        String cacheKey = CACHE_KEY_PRE + dataSourceConfig.getAppName() + ":" + request.getTable() + ":"
-                          + request.getJobId();
+    private void concurrentExecute(DTransferJobRequest request, AtomicLong loop) {
         while (true) {
-            Long executorStartId;
-            Long executorEndId;
-
             //获取分片
             try {
-                synchronized (request) {
-                    String cacheValue = stringRedisTemplate.opsForValue().get(cacheKey);
-                    if (StringUtil.isBlank(cacheValue)) {
-                        executorStartId = 0L;
-                    } else {
-                        executorStartId = Long.valueOf(cacheValue);
-                    }
-                    executorEndId = executorStartId + request.getLimit();
-                    stringRedisTemplate.opsForValue().set(cacheKey, executorEndId.toString());
-                }
+                Long executorStartId = loop.getAndAdd(request.getLimit());
+                Long executorEndId = loop.get();
                 long startTime = System.currentTimeMillis();
                 log.info("任务id为{}开始分段获取数据，获取到分段区间id为{}-{}", request.getJobId(), executorStartId, executorEndId);
-                if (executorStartId > request.getMaxId()) {
+                if (executorStartId > request.getEndId()) {
                     break;
                 }
-                ReadRequest threadParam = new ReadRequest();
-                threadParam.setTable(request.getTable());
-                threadParam.setStartId(executorStartId);
-                threadParam.setEndId(executorEndId);
-                threadParam.setIdList(request.getIdList());
-                threadParam.setLimit(request.getLimit());
-                threadParam.setQuerySql(request.getQuerySql());
-                threadParam.setDatasourceType(request.getDatasourceType());
-                List<Map<String, Object>> dataList = dataTransferService.getDataList(threadParam);
+                ReadRequest readRequest = new ReadRequest();
+                readRequest.setTable(request.getSourceTable());
+                readRequest.setStartId(executorStartId);
+                readRequest.setEndId(executorEndId);
+                readRequest.setIdList(request.getIdList());
+                readRequest.setLimit(request.getLimit());
+                readRequest.setQuerySql(request.getQuerySql());
+                readRequest.setDatasourceType(request.getDatasourceType());
+                List<Map<String, Object>> dataList = dataTransferService.getDataList(readRequest);
                 log.info("任务id为{}分段获取数据结束，获取到分段区间id为{}-{}，一共获取到数据量为：{}，查询花费时间为{}", request.getJobId(), executorStartId,
                     executorEndId, dataList.size(), System.currentTimeMillis() - startTime);
                 //本批数据处理
@@ -171,7 +139,7 @@ public class DTransferFactory {
                         executorEndId, dataList.size(), System.currentTimeMillis() - start);
                 }
             } catch (Exception e) {
-                log.error("data-sync-error: 同步异常.任务id为{}，表名为{}", request.getJobId(), request.getTable(), e);
+                log.error("data-sync-error: 同步异常.任务id为{}，表名为{}", request.getJobId(), request.getSourceTable(), e);
             }
         }
     }
@@ -191,19 +159,13 @@ public class DTransferFactory {
             }
             //分库分表前期逻辑表手动拼_NEW，因为双写与老表区分
             WriteRequest writeRequest = new WriteRequest();
-            if (Boolean.TRUE.equals(request.getSharding())) {
-                writeRequest.setTable(request.getTable() + SHARDING_TABLE_SUFFIX);
-                log.info("任务id为{}开启分库分表配置，参数传入表为{}，实际写入逻辑表为{}", request.getJobId(), request.getTable(),
-                    writeRequest.getTable());
-            } else {
-                writeRequest.setTable(request.getTable());
-            }
+            writeRequest.setTargetTable(request.getTargetTable());
             List<String> columns = new ArrayList<>(dataList.get(0).keySet());
             List<String> valueHolders = new ArrayList<>(columns.size());
             for (int i = 0; i < columns.size(); i++) {
                 valueHolders.add("?");
             }
-            String writeTemplate = CommonRdbmsUtil.getWriteTemplate(columns, valueHolders, writeRequest.getTable());
+            String writeTemplate = CommonRdbmsUtil.getWriteTemplate(columns, valueHolders, writeRequest.getTargetTable());
             List<Object[]> params = new ArrayList<>();
             for (Map<String, Object> map : dataList) {
                 Object[] objects = map.values().toArray();
@@ -214,7 +176,7 @@ public class DTransferFactory {
             writeRequest.setJobId(request.getJobId());
             dataTransferService.doBatchInsert(writeRequest);
         } catch (Exception e) {
-            log.error("data-sync-error: 同步异常.任务id为{}，表名为{}，数据为{}", request.getJobId(), request.getTable(), dataList, e);
+            log.error("data-sync-error: 同步异常.任务id为{}，表名为{}，数据为{}", request.getJobId(), request.getSourceTable(), dataList, e);
         }
     }
 }

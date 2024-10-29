@@ -1,3 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  cn.yzw.jc2.common.transfer.config.DTransferConfig,\
-  cn.yzw.jc2.common.transfer.config.DataSourceConfig
+  cn.yzw.jc2.common.transfer.config.DTransferConfig

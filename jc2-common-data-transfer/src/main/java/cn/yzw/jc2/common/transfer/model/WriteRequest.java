@@ -21,7 +21,7 @@ public class WriteRequest implements Serializable {
     /**
      * 任务id
      */
-    private Long           jobId;
+    private String         jobId;
 
     /**
      * 参数
@@ -29,7 +29,7 @@ public class WriteRequest implements Serializable {
     private List<Object[]> params;
 
     /**
-     * 表名
+     * 新表名
      */
-    private String         table;
+    private String         targetTable;
 }
