@@ -37,7 +37,7 @@ public class DTransferService {
     public void execute(DTransferJobRequest request) {
         if (CollectionUtil.isNotEmpty(request.getIdList())) {
             request.setEndId(Collections.max(request.getIdList()));
-        } else if (Objects.isNull(request.getEndId())){
+        } else if (Objects.isNull(request.getEndId())) {
             Long maxId = dataTransferDao.getMaxId(request.getSourceTable(), request.getDataSourceName());
             request.setEndId(maxId);
         }
@@ -53,7 +53,7 @@ public class DTransferService {
                 pool = Executors.newFixedThreadPool(threadNum);
                 List<Future> tasks = new ArrayList<>(threadNum);
                 long startTime = System.currentTimeMillis();
-                log.info("任务id{}分片执行开始，分片数量为{}", request.getJobId(), threadNum);
+                log.info("任务id为{}分片执行开始，分片数量为{}", request.getJobId(), threadNum);
                 for (int i = 0; i < threadNum; i++) {
                     tasks.add(pool.submit(() -> concurrentExecute(request, loop)));
                 }
@@ -82,28 +82,41 @@ public class DTransferService {
     }
 
     private void serialExecute(DTransferJobRequest request) {
+        Long loop = request.getStartId();
         while (true) {
             try {
                 //批量查询
                 ReadRequest readRequest = new ReadRequest();
                 readRequest.setTable(request.getSourceTable());
-                readRequest.setStartId(request.getStartId());
+                readRequest.setStartId(loop);
                 readRequest.setEndId(request.getEndId());
                 readRequest.setIdList(request.getIdList());
                 readRequest.setLimit(request.getLimit());
                 readRequest.setQuerySql(request.getQuerySql());
                 readRequest.setDatasourceType(request.getDatasourceType());
                 readRequest.setDataSourceName(readRequest.getDataSourceName());
+                long start = System.currentTimeMillis();
+                log.info("任务id为{}开始执行串行同步逻辑-查询，起始id为{}，limit：{}", request.getJobId(), loop, request.getLimit());
                 List<Map<String, Object>> dataList = dataTransferDao.getDataList(readRequest);
+                long end = System.currentTimeMillis();
+                log.info("任务id为{}开始执行串行同步逻辑-查询结束，起始id为{}，limit：{}，获取数量：{}，花费时间：{}", request.getJobId(), loop,
+                    request.getLimit(), dataList.size(), end - start);
 
                 //本批数据处理
                 if (CollectionUtils.isEmpty(dataList)) {
                     break;
                 }
                 //本批数据处理
+                long writeStart = System.currentTimeMillis();
+                log.info("任务id为{}开始执行串行同步逻辑-写开始，起始id为{}，limit：{}，获取数量：{}", request.getJobId(), loop,
+                        request.getLimit(), dataList.size());
                 this.execute(dataList, request);
+                long writeEnd = System.currentTimeMillis();
+                log.info("任务id为{}开始执行串行同步逻辑-写结束，起始id为{}，limit：{}，获取数量：{}，花费时间：{}", request.getJobId(), loop,
+                        request.getLimit(), dataList.size(), writeEnd - writeStart);
+                loop = loop + request.getLimit();
             } catch (Exception e) {
-                log.error("data-sync-error: 同步异常.");
+                log.error("data-sync-error: 同步异常. 任务id为{}，当前起始id为{}", request.getJobId(), loop);
             }
         }
     }
@@ -168,7 +181,8 @@ public class DTransferService {
             for (int i = 0; i < columns.size(); i++) {
                 valueHolders.add("?");
             }
-            String writeTemplate = CommonRdbmsUtil.getWriteTemplate(columns, valueHolders, writeRequest.getTargetTable());
+            String writeTemplate = CommonRdbmsUtil.getWriteTemplate(columns, valueHolders,
+                writeRequest.getTargetTable());
             List<Object[]> params = new ArrayList<>();
             for (Map<String, Object> map : dataList) {
                 Object[] objects = map.values().toArray();
@@ -179,7 +193,8 @@ public class DTransferService {
             writeRequest.setJobId(request.getJobId());
             dataTransferDao.doBatchInsert(writeRequest);
         } catch (Exception e) {
-            log.error("data-sync-error: 同步异常.任务id为{}，表名为{}，数据为{}", request.getJobId(), request.getSourceTable(), dataList, e);
+            log.error("data-sync-error: 同步异常.任务id为{}，表名为{}，数据为{}", request.getJobId(), request.getSourceTable(),
+                dataList, e);
         }
     }
 }

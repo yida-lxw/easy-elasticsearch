@@ -65,7 +65,7 @@ public class DTransferJob {
             dTransferService.execute(request);
             log.info("本次任务id为{}-表{}迁移任务执行耗时{}", request.getJobId(), request.getSourceTable(),
                 System.currentTimeMillis() - startTime);
-            return new ReturnT<>(ReturnT.SUCCESS_CODE, "执行完成，任务id" + request.getJobId());
+            return new ReturnT<>(ReturnT.SUCCESS_CODE, "执行完成，任务id为" + request.getJobId());
         } catch (Exception ex) {
             log.error("定时任务fullDTransferJob执行时出现异常,任务id为{}", request.getJobId(), ex);
             XxlJobLogger.log(ex);
