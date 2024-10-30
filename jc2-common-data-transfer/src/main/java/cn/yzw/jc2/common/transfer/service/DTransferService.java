@@ -154,7 +154,7 @@ public class DTransferService {
                         executorEndId, dataList.size(), System.currentTimeMillis() - start);
                 }
             } catch (Exception e) {
-                log.error("data-sync-error: 同步异常.任务id为{}，表名为{}", request.getJobId(), request.getSourceTable(), e);
+                log.error("data-sync-error: 同步异常.任务id为{}，表名为{}，当前数据id:{}", request.getJobId(), request.getSourceTable(), loop.get(), e);
             }
         }
     }
