@@ -38,7 +38,7 @@ public class BeanConfig{
 ###4. 使用示例
 ```java
 @Data
-public class EsBaseQuery extends EsSearchBase implements Serializable {
+public class EsSearchQuery implements Serializable {
 
     /**
      * 同主UK
@@ -88,7 +88,7 @@ public class EsBaseQuery extends EsSearchBase implements Serializable {
     
     public String search() {
         SearchPageRequest<Object> request = new SearchPageRequest<>();
-        EsBaseQuery query = new EsBaseQuery();
+        EsSearchQuery query = new EsSearchQuery();
         query.setId("123");
         EsOrgMultiQuery orgMultiQuery = new EsOrgMultiQuery();
         orgMultiQuery.setOrgCode("10005767661");
