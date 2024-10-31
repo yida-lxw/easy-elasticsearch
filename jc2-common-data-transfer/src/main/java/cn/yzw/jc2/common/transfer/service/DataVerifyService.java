@@ -158,15 +158,15 @@ public class DataVerifyService {
 
     private synchronized List<Map<String, Object>> getRows(DTransferVerifyJobRequest request, String realTableName,
                                                            AtomicLong startId, DTransferVerifyJobResponse response, JdbcTemplate jdbcTemplate) {
-        List<Map<String, Object>> oldRows = jdbcTemplate.queryForList(
+        List<Map<String, Object>> newRows = jdbcTemplate.queryForList(
             String.format("SELECT %S,id FROM %s where id>? LIMIT ?", request.getPrimaryKeyName(), realTableName),
             startId.get(), request.getLimit());
         // 如果没有数据，退出循环
-        if (CollectionUtils.isEmpty(oldRows)) {
+        if (CollectionUtils.isEmpty(newRows)) {
             return null;
         }
-        response.setVerifyNewTableCount(response.getVerifyNewTableCount() + oldRows.size());
-        Object id = oldRows.get(oldRows.size() - 1).get("id");
+        response.setVerifyNewTableCount(response.getVerifyNewTableCount() + newRows.size());
+        Object id = newRows.get(newRows.size() - 1).get("id");
         if (id instanceof BigInteger) {
             BigInteger valId = (BigInteger) id;
             startId.set(valId.longValue());
@@ -180,7 +180,7 @@ public class DataVerifyService {
             throw new RuntimeException("不能解析的id类型");
         }
 
-        return oldRows;
+        return newRows;
     }
     //    private void verifyDataForDelNewTableNotExistInOldTable(DTransferVerifyJobRequest request,
     //                                                            DTransferVerifyJobResponse response,
