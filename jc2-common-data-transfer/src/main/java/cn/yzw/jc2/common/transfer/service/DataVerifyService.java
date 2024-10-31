@@ -159,7 +159,7 @@ public class DataVerifyService {
     private synchronized List<Map<String, Object>> getRows(DTransferVerifyJobRequest request, String realTableName,
                                                            AtomicLong startId, DTransferVerifyJobResponse response, JdbcTemplate jdbcTemplate) {
         List<Map<String, Object>> newRows = jdbcTemplate.queryForList(
-            String.format("SELECT %S,id FROM %s where id>? LIMIT ?", request.getPrimaryKeyName(), realTableName),
+            String.format("SELECT %S,id FROM %s where id>? order by id asc LIMIT ?", request.getPrimaryKeyName(), realTableName),
             startId.get(), request.getLimit());
         // 如果没有数据，退出循环
         if (CollectionUtils.isEmpty(newRows)) {

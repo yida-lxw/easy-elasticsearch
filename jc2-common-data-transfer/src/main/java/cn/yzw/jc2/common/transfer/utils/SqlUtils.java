@@ -130,6 +130,7 @@ public class SqlUtils {
         if (Objects.nonNull(request.getOldTableEndId())) {
             sb.append(" and id <= ").append(request.getOldTableEndId());
         }
+        sb.append(" order by id asc");
         sb.append(" limit ?");
         String sql = sb.toString();
         return sql;
