@@ -1,2 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  cn.yzw.jc2.common.util.config.CommonUtilConfig

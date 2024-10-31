@@ -7,58 +7,25 @@
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>2.3.5.RELEASE</version>
     </parent>
-    <groupId>cn.yzw.jc2</groupId>
-    <artifactId>jc2-common</artifactId>
+    <groupId>com.easy.elasticsearch</groupId>
+    <artifactId>easy-elasticsearch</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>jc2-common</name>
-    <description>集采2通用组件</description>
+    <name>easy-elasticsearch</name>
+    <description>elasticsearch搜索组件</description>
     <modules>
-        <module>jc2-common-bootstrap</module>
-        <module>jc2-common-elastic-search</module>
-        <module>jc2-common-utils</module>
-        <module>jc2-common-dmigrate</module>
-        <module>jc2-common-retry</module>
-        <module>jc2-common-data-transfer</module>
+        <module>easy-elasticsearch-bootstrap</module>
+        <module>easy-elasticsearch-client</module>
     </modules>
     <properties>
         <java.version>1.8</java.version>
         <spring.boot.version>2.3.5.RELEASE</spring.boot.version>
-        <jc2.common.elastic.search.version>1.0.20240822-SNAPSHOT</jc2.common.elastic.search.version>
-        <jc2.common.utils.version>1.0.0-SNAPSHOT</jc2.common.utils.version>
-        <jc2.common.dmigrate.version>1.0.0-SNAPSHOT</jc2.common.dmigrate.version>
-        <jc2.common.transfer.version>1.0.0-SNAPSHOT</jc2.common.transfer.version>
-        <jc2.common.retry.version>1.0.0</jc2.common.retry.version>
+        <easy.elasticsearch.version>1.0.0-SNAPSHOT</easy.elasticsearch.version>
+        <easy.elasticsearch.version>1.0.0-SNAPSHOT</easy.elasticsearch.version>
+
     </properties>
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>cn.yzw.jc2</groupId>
-                <artifactId>jc2-common-elastic-search</artifactId>
-                <version>${jc2.common.elastic.search.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>cn.yzw.jc2</groupId>
-                <artifactId>jc2-common-utils</artifactId>
-                <version>${jc2.common.utils.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>cn.yzw.jc2</groupId>
-                <artifactId>jc2-common-dmigrate</artifactId>
-                <version>${jc2.common.dmigrate.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>cn.yzw.jc2</groupId>
-                <artifactId>jc2-common-retry-starter</artifactId>
-                <version>${jc2.common.retry.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>cn.yzw.jc2</groupId>
-                <artifactId>jc2-common-data-transfer-starter</artifactId>
-                <version>${jc2.common.transfer.version}</version>
-            </dependency>
-
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-web</artifactId>
@@ -84,32 +51,6 @@
                 <groupId>org.apache.tomcat.embed</groupId>
                 <artifactId>tomcat-embed-core</artifactId>
                 <version>9.0.46</version>
-            </dependency>
-            <dependency>
-                <groupId>org.mybatis</groupId>
-                <artifactId>mybatis</artifactId>
-                <version>3.5.10</version>
-            </dependency>
-            <dependency>
-                <groupId>com.github.jsqlparser</groupId>
-                <artifactId>jsqlparser</artifactId>
-                <version>4.6</version>
-            </dependency>
-            <dependency>
-                <groupId>cn.yzw.infra</groupId>
-                <artifactId>yzw-component-utils</artifactId>
-                <version>1.1.1</version>
-            </dependency>
-            <dependency>
-                <groupId>com.xuxueli</groupId>
-                <artifactId>xxl-job-core</artifactId>
-                <version>yzw-2.2.7</version>
-            </dependency>
-            <dependency>
-                <groupId>org.redisson</groupId>
-                <artifactId>redisson</artifactId>
-                <version>3.17.3</version>
-                <scope>compile</scope>
             </dependency>
 
             <dependency>
@@ -219,22 +160,6 @@
                             </goals>
                         </execution>
                     </executions>
-
-                    <!--                    <configuration>-->
-                    <!--                        <additionalClasspathElements>-->
-                    <!--                            <additionalClasspathElement>${basedir}/../../target/classes</additionalClasspathElement>-->
-                    <!--                        </additionalClasspathElements>-->
-                    <!--                        <skipTests>false</skipTests>-->
-                    <!--                        <forkCount>1</forkCount>-->
-                    <!--                        <reuseForks>true</reuseForks>-->
-                    <!--                        <includes>-->
-                    <!--                            <include>**/*Test.java</include>-->
-                    <!--                        </includes>-->
-                    <!--                        <excludes>-->
-                    <!--                            <exlcude>PSupsTestBase.java</exlcude>-->
-                    <!--                        </excludes>-->
-                    <!--                        <testFailureIgnore>true</testFailureIgnore>-->
-                    <!--                    </configuration>-->
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

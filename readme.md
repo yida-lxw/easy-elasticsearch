@@ -3,17 +3,25 @@
 
 ## 模块职责
 
-| 模块                          | 说明    |
-|:----------------------------|:------|
-| `jc2-common-bootstrap`      | 启动测试  |
-| `jc2-common-dmigrate`       | 数据迁移  |
-| `jc2-common-elastic-search` | es 检索 |
-| `jc2-common-utils`          | 工具包   |
-| `jc2-common-retry`          | 重试任务  |
+| 模块                              | 说明    |
+|:--------------------------------|:------|
+| easy-elasticsearch-bootstrap    | 启动测试  |
+| easy-elasticsearch-search       | es 检索 |
 
 ## 接入说明
+###1.引入jar包
+<dependency>
+<groupId>com.easy.elasticsearch</groupId>
+<artifactId>easy-elasticsearch-client</artifactId>
+<version>1.0.0-SNAPSHOT</version>
+</dependency>
 
-jc2-common-elastic-search： 项目正常配置es的地址，初始化EsQueryClient。示例如下：
+###2.项目正常配置es的地址
+spring.elasticsearch.rest.uris=http://127.0.0.1:9200,http://127.0.0.2:9200
+spring.elasticsearch.rest.username=elastic
+spring.elasticsearch.rest.password=elastic
+
+###3.初始化EsQueryClient。示例如下：
 ```java
 
 public class BeanConfig{
@@ -24,41 +32,69 @@ public class BeanConfig{
 }
 
 ```
-
-jc2-common-dmigrate： 实现接口{DMigrationService，ExchangeStrategyService},初始化DataExchangeDealClient，示例如下：
+###4. 使用示例
 ```java
-public class BeanConfig{
-    @Bean
-    public DataExchangeDealClient client() {
-        return new DataExchangeDealClient();
+@Data
+public class EsBaseQuery extends EsSearchBase implements Serializable {
+
+    /**
+     * 同主UK
+     */
+    @EsEquals(name = "_id")
+    private String                id;
+
+    /**
+     * 租户
+     */
+    @EsEquals
+    private String                tenantId;
+    
+
+    /**
+     * 条件选择code列表，包含本下
+     */
+    @EsMulti
+    private EsOrgMultiQuery       conditionOrgQuery;
+
+    /**
+     * 名称
+     */
+    @EsLike(name = "orgName", leftLike = true, rightLike = true)
+    private String                purOrgName;
+
+    /**
+     * 供应商id
+     */
+    @EsEquals
+    private Long                  supCompanyId;
+
+
+    /**
+     * 创建时间
+     */
+    @EsRange(name = "createTime", gt = true, includeLower = true)
+    private Long                  createTimeStart;
+    /**
+     * 创建时间
+     */
+    @EsRange(name = "createTime", lt = true, includeUpper = true)
+    private Long                  createTimeEnd;
+
+    @EsMulti
+    private EsOrgMultiQuery       esOrgMultiQuery;
+    
+    public String search() {
+        SearchPageRequest<Object> request = new SearchPageRequest<>();
+        EsBaseQuery query = new EsBaseQuery();
+        query.setId("123");
+        EsOrgMultiQuery orgMultiQuery = new EsOrgMultiQuery();
+        orgMultiQuery.setOrgCode("10005767661");
+        orgMultiQuery.setOrgCodeContainSub("13453460001");
+        request.setParam(query);
+        request.setPageSize(20);
+        request.setIndex("alias_idx_test");
+        SearchPageResult<Map> afterResult = esQueryService.search(request, Map.class);
+        return  JsonUtils.writeAsJson(afterResult);
     }
 }
-
 ```
-jc2-common-utils： 开箱即用
-
-```
-jc2-common-retrey： 见接入文档https://alidocs.dingtalk.com/i/nodes/ZX6GRezwJl7dDg75t1OEQloyVdqbropQ
-
-```
-## 版本说明
-jc2-common-dmigrate（数据迁移）
-
-| 版本                          | 说明         |
-|:----------------------------|:-----------|
-| `1.0.0-SNAPSHOT`            | 支持数据迁移基础功能 |
-
-
-
-jc2-common-elastic-search（es 检索）
-
-| 版本                          | 说明                    |
-|:----------------------------|:----------------------|
-| `1.0.0-SNAPSHOT`            | 支持注解方式检索es,暂不支持注解方式聚合 |
-
-
-jc2-common-utils（工具包）
-
-| 版本      | 说明                                |
-|:--------|:----------------------------------|
-| `1.0.0` | 1.json工具解析日期增强<br/>2.多线程支持父子传递上下文 |
