@@ -197,102 +197,10 @@
     <!--定义打包命令指定的环境对应的profileActive变量值-->
     <profiles>
 
-        <profile>
-            <id>dev</id>
-
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>yzw-dev</id>
-                    <url>http://nexus.yzw.cn/repository/yzw-dev/</url>
-                </snapshotRepository>
-            </distributionManagement>
-            <repositories>
-                <repository>
-                    <releases>
-                        <enabled>true</enabled>
-                    </releases>
-                    <snapshots>
-                        <enabled>true</enabled>
-                    </snapshots>
-                    <id>yzw-dev</id>
-                    <url>http://nexus.yzw.cn/repository/yzw-dev-public/</url>
-                </repository>
-            </repositories>
-        </profile>
-        <profile>
-            <id>qa</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>yzw-qa</id>
-                    <url>http://nexus.yzw.cn/repository/yzw-qa/</url>
-                </snapshotRepository>
-            </distributionManagement>
-            <repositories>
-                <repository>
-                    <releases>
-                        <enabled>true</enabled>
-                    </releases>
-                    <snapshots>
-                        <enabled>true</enabled>
-                    </snapshots>
-                    <id>yzw-qa</id>
-                    <url>http://nexus.yzw.cn/repository/yzw-qa-public/</url>
-                </repository>
-            </repositories>
-        </profile>
-        <profile>
-            <id>stg</id>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>yzw-stg</id>
-                    <url>http://nexus.yzw.cn/repository/yzw-stg/</url>
-                </snapshotRepository>
-            </distributionManagement>
-            <repositories>
-                <repository>
-                    <releases>
-                        <enabled>true</enabled>
-                    </releases>
-                    <snapshots>
-                        <enabled>true</enabled>
-                    </snapshots>
-                    <id>yzw-stg</id>
-                    <url>http://nexus.yzw.cn/repository/yzw-stg-public/</url>
-                </repository>
-            </repositories>
-        </profile>
-        <profile>
-            <id>prd</id>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>yzw-prd</id>
-                    <url>http://nexus.yzw.cn/repository/yzw-prd/</url>
-                </snapshotRepository>
-            </distributionManagement>
-            <repositories>
-                <repository>
-                    <releases>
-                        <enabled>true</enabled>
-                    </releases>
-                    <snapshots>
-                        <enabled>true</enabled>
-                    </snapshots>
-                    <id>yzw-prd</id>
-                    <url>http://nexus.yzw.cn/repository/yzw-prd-public/</url>
-                </repository>
-            </repositories>
-        </profile>
     </profiles>
 
     <!-- jar包发布地址 -->
     <distributionManagement>
-        <repository>
-            <id>yzw-release</id>
-            <url>http://nexus.yzw.cn/repository/maven-releases/</url>
-        </repository>
     </distributionManagement>
 
 </project>
