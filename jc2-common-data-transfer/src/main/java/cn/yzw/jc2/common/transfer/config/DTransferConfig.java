@@ -81,15 +81,15 @@ public class DTransferConfig {
         return new DataVerifyService();
     }
 
-    @Bean
+    @Bean("doubleWriteInterceptor")
     public DoubleWriteInterceptor doubleWriteInterceptor() {
         log.info("init mybatis DoubleWriteInterceptor");
         return new DoubleWriteInterceptor();
     }
 
-    @Bean
-    public SingleRWInterceptor singleReadInterceptor() {
-        log.info("init mybatis SingleReadInterceptor");
+    @Bean("singleRWInterceptor")
+    public SingleRWInterceptor singleRWInterceptor() {
+        log.info("init mybatis singleRWInterceptor");
         return new SingleRWInterceptor();
     }
 

@@ -62,7 +62,7 @@ public class SingleRWInterceptor implements Interceptor {
         String originalSql = boundSql.getSql();
         List<String> tableNames = SqlUtils.getTableNames(originalSql);
         if (CollectionUtils.isEmpty(tableNames) || tableNames.size() > 1) {
-            log.info("SingleReadInterceptor表名不符合拦截条件{}", tableNames);
+            log.info("SingleRWInterceptor表名不符合拦截条件{}", tableNames);
             return invocation.proceed();
         }
         String oldTableName = tableNames.get(0);
@@ -81,7 +81,7 @@ public class SingleRWInterceptor implements Interceptor {
                     .equalsIgnoreCase(dTransferDoubleWriteProperties.getReadType())) {
                 String modifiedSql = SqlUtils.replaceTableName(originalSql, oldTableName,
                     dTransferDoubleWriteProperties.getNewTableName());
-                log.info("SingleReadInterceptor execute after sql is: {}", modifiedSql);
+                log.info("SingleRWInterceptor execute after sql is: {}", modifiedSql);
                 // 通过反射修改 BoundSql 中的 SQL 字段
                 Field sqlField = BoundSql.class.getDeclaredField("sql");
                 sqlField.setAccessible(true);
@@ -94,7 +94,7 @@ public class SingleRWInterceptor implements Interceptor {
                 .equalsIgnoreCase(dTransferDoubleWriteProperties.getWriteType())) {
                 String modifiedSql = SqlUtils.replaceTableName(originalSql, oldTableName,
                     dTransferDoubleWriteProperties.getNewTableName());
-                log.info("SingleReadInterceptor execute after sql is: {}", modifiedSql);
+                log.info("SingleRWInterceptor execute after sql is: {}", modifiedSql);
                 // 通过反射修改 BoundSql 中的 SQL 字段
                 Field sqlField = BoundSql.class.getDeclaredField("sql");
                 sqlField.setAccessible(true);
