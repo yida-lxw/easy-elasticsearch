@@ -64,7 +64,7 @@ public class DTransferService {
                         log.error("data-sync-error: 数据迁移线程执行异常", ex);
                     }
                 });
-                log.info("任务id{}分片执行结束，分片数量为{}，花费时间为{}", request.getJobId(), threadNum,
+                log.info("任务id为{}分片执行结束，分片数量为{}，花费时间为{}", request.getJobId(), threadNum,
                     System.currentTimeMillis() - startTime);
             } catch (Exception e) {
                 log.error("data-sync-error: 数据迁移线程执行异常", e);
