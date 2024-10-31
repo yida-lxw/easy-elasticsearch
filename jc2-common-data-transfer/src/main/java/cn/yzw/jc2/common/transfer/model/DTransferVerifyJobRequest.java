@@ -1,7 +1,7 @@
 package cn.yzw.jc2.common.transfer.model;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Set;
 
 import lombok.Data;
 
@@ -12,19 +12,24 @@ import lombok.Data;
  **/
 @Data
 public class DTransferVerifyJobRequest implements Serializable {
+    /**
+     * 核对模式：ONLY_READ：只读模式；READ_WRITE：读写模式
+     * 默认读写模式
+     */
+    private String      verifyMode;
 
     /**
      * 老表名，必填
      */
-    private String       olbTable;
+    private String      oldTable;
     /**
      * 基于老表开始的最小id
      */
-    private Long         olbTableStartId;
+    private Long        oldTableStartId;
     /**
      * 基于老表结束的最小id
      */
-    private Long         olbTableEndId;
+    private Long        oldTableEndId;
     /**
      * 新表参数，必填
      */
@@ -33,12 +38,12 @@ public class DTransferVerifyJobRequest implements Serializable {
     /**
      * 要核对的列，可空
      */
-    private List<String> columns;
+    private Set<String> columns;
 
     /**
      * 核对忽略的列，默认忽略id,update_time,create_time
      */
-    private List<String> ignoreColumns;
+    private Set<String> ignoreColumns;
     /**
      * 表唯一键（新老表都唯一），必填
      */

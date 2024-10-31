@@ -18,9 +18,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.StopWatch;
 
-import cn.yzw.jc2.common.transfer.common.AbstractDataTransferBase;
+import cn.yzw.jc2.common.transfer.enums.VerifyModeEnum;
 import cn.yzw.jc2.common.transfer.enums.VerifyTypeEnum;
 import cn.yzw.jc2.common.transfer.model.DTransferVerifyJobRequest;
 import cn.yzw.jc2.common.transfer.model.DTransferVerifyJobResponse;
@@ -35,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
  * @Date: 2024/10/24
  **/
 @Slf4j(topic = "dtransfer")
-public class DataVerifyService extends AbstractDataTransferBase {
+public class DataVerifyService {
 
     /**
      * @Description: 数据核对方法
@@ -44,8 +45,7 @@ public class DataVerifyService extends AbstractDataTransferBase {
      * @param:
      * @return:
      **/
-    public DTransferVerifyJobResponse verifyData(DTransferVerifyJobRequest request) {
-        initJdbcTemplate(request.getDataSourceName());
+    public DTransferVerifyJobResponse verifyData(DTransferVerifyJobRequest request, JdbcTemplate jdbcTemplate) {
         DTransferVerifyJobResponse response = new DTransferVerifyJobResponse(new AtomicLong(0), new AtomicLong(0), 0L,
             0L);
         ThreadPoolMdcWrapperExecutor executor = creatThreadPool(request);
@@ -65,8 +65,9 @@ public class DataVerifyService extends AbstractDataTransferBase {
             } else {
                 threadNum = executor.getCorePoolSize() - 1;
             }
-            executor.execute(() -> verifyDataForUpdateNewTableByOldTable(request, response, executor, threadNum));
+            executor.execute(() -> verifyDataForUpdateNewTableByOldTable(request, response, executor, threadNum,jdbcTemplate));
         }
+
         //基于新表查询数据在老表是否存在，不存在则删除新表数据
         if (VerifyTypeEnum.COMPARE_ALL.name().equals(request.getVerifyType())
             || VerifyTypeEnum.COMPARE_OLD_TABLE_BY_NEW_TABLE.name().equalsIgnoreCase(request.getVerifyType())) {
@@ -77,7 +78,7 @@ public class DataVerifyService extends AbstractDataTransferBase {
             } else {
                 threadNum = executor.getCorePoolSize() - 1;
             }
-            executor.execute(() -> verifyDataForDelNewTableNotExistInOldTable(request, response, executor, threadNum));
+            executor.execute(() -> verifyDataForDelNewTableNotExistInOldTable(request, response, executor, threadNum,jdbcTemplate));
         }
         return response;
     }
@@ -109,7 +110,7 @@ public class DataVerifyService extends AbstractDataTransferBase {
      **/
     private void verifyDataForDelNewTableNotExistInOldTable(DTransferVerifyJobRequest request,
                                                             DTransferVerifyJobResponse response,
-                                                            ThreadPoolMdcWrapperExecutor executor, int threadNum) {
+                                                            ThreadPoolMdcWrapperExecutor executor, int threadNum, JdbcTemplate jdbcTemplate) {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         DTransferVerifyJobRequest.NewTable newTable = request.getNewTable();
@@ -121,7 +122,7 @@ public class DataVerifyService extends AbstractDataTransferBase {
             if (threadNum > 1) {
                 List<Future> tasks = new ArrayList<>(threadNum);
                 for (int j = 0; j < threadNum; j++) {
-                    tasks.add(executor.submit(() -> queryAndDeal(request, response, realTableName, id)));
+                    tasks.add(executor.submit(() -> queryAndDeal(request, response, realTableName, id,jdbcTemplate)));
                 }
                 tasks.forEach(e -> {
                     try {
@@ -131,7 +132,7 @@ public class DataVerifyService extends AbstractDataTransferBase {
                     }
                 });
             } else {
-                queryAndDeal(request, response, realTableName, id);
+                queryAndDeal(request, response, realTableName, id,jdbcTemplate);
             }
             log.info("基于新表{}核对结束", realTableName);
         }
@@ -141,22 +142,22 @@ public class DataVerifyService extends AbstractDataTransferBase {
     }
 
     private void queryAndDeal(DTransferVerifyJobRequest request, DTransferVerifyJobResponse response,
-                              String realTableName, AtomicLong startId) {
+                              String realTableName, AtomicLong startId, JdbcTemplate jdbcTemplate) {
         while (true) {
             // 1. 从新表中分批读取数据
-            List<Map<String, Object>> oldRows = getRows(request, realTableName, startId);
+            List<Map<String, Object>> oldRows = getRows(request, realTableName, startId, response,jdbcTemplate);
             if (CollectionUtils.isEmpty(oldRows)) {
                 break;
             }
-            response.setVerifyNewTableCount(response.getVerifyNewTableCount() + oldRows.size());
+
             // 2. 新表数据在老表是否存在
-            existOldTableRows(oldRows, request, response, realTableName);
+            existOldTableRows(oldRows, request, response, realTableName,jdbcTemplate);
 
         }
     }
 
     private synchronized List<Map<String, Object>> getRows(DTransferVerifyJobRequest request, String realTableName,
-                                                           AtomicLong startId) {
+                                                           AtomicLong startId, DTransferVerifyJobResponse response, JdbcTemplate jdbcTemplate) {
         List<Map<String, Object>> oldRows = jdbcTemplate.queryForList(
             String.format("SELECT %S,id FROM %s where id>? LIMIT ?", request.getPrimaryKeyName(), realTableName),
             startId.get(), request.getLimit());
@@ -164,6 +165,7 @@ public class DataVerifyService extends AbstractDataTransferBase {
         if (CollectionUtils.isEmpty(oldRows)) {
             return null;
         }
+        response.setVerifyNewTableCount(response.getVerifyNewTableCount() + oldRows.size());
         Object id = oldRows.get(oldRows.size() - 1).get("id");
         if (id instanceof BigInteger) {
             BigInteger valId = (BigInteger) id;
@@ -254,14 +256,14 @@ public class DataVerifyService extends AbstractDataTransferBase {
      * @return:
      **/
     private void existOldTableRows(List<Map<String, Object>> newRows, DTransferVerifyJobRequest request,
-                                   DTransferVerifyJobResponse response, String realTableName) {
+                                   DTransferVerifyJobResponse response, String realTableName, JdbcTemplate jdbcTemplate) {
         // 创建查询条件的 Map，方便批量查询
         Set<Object> primaryValues = newRows.stream().map(row -> row.get(request.getPrimaryKeyName()))
             .collect(Collectors.toSet());
 
         // 生成 SQL 查询语句
         String sql = String.format("SELECT %s FROM %s WHERE %s IN (%s)", request.getPrimaryKeyName(),
-            request.getOlbTable(), request.getPrimaryKeyName(),
+            request.getOldTable(), request.getPrimaryKeyName(),
             String.join(",", Collections.nCopies(primaryValues.size(), "?")));
 
         // 批量查询新表数据
@@ -276,6 +278,9 @@ public class DataVerifyService extends AbstractDataTransferBase {
             Object primaryKeyValue = newRow.get(request.getPrimaryKeyName());
             if (!oldPrimaryValueSet.contains(primaryKeyValue)) {
                 log.info("老表中无主键值为{}的记录", primaryKeyValue);
+                if (VerifyModeEnum.ONLY_READ.name().equalsIgnoreCase(request.getVerifyMode())) {
+                    continue;
+                }
                 // 执行删除操作
                 String updateSql = String.format("DELETE FROM %s WHERE %s = ?", realTableName,
                     request.getPrimaryKeyName());
@@ -295,13 +300,13 @@ public class DataVerifyService extends AbstractDataTransferBase {
      **/
     private void verifyDataForUpdateNewTableByOldTable(DTransferVerifyJobRequest request,
                                                        DTransferVerifyJobResponse response,
-                                                       ThreadPoolMdcWrapperExecutor executor, int threadNum) {
+                                                       ThreadPoolMdcWrapperExecutor executor, int threadNum, JdbcTemplate jdbcTemplate) {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         if (threadNum > 1) {
             List<Future> tasks = new ArrayList<>(threadNum);
             for (int i = 0; i < threadNum; i++) {
-                tasks.add(executor.submit(() -> verifyDataForUpdateNewTableByOldTable(request, response)));
+                tasks.add(executor.submit(() -> verifyDataForUpdateNewTableByOldTable(request, response,jdbcTemplate)));
             }
             tasks.forEach(e -> {
                 try {
@@ -311,7 +316,7 @@ public class DataVerifyService extends AbstractDataTransferBase {
                 }
             });
         } else {
-            verifyDataForUpdateNewTableByOldTable(request, response);
+            verifyDataForUpdateNewTableByOldTable(request, response,jdbcTemplate);
         }
         stopWatch.stop();
         log.info("基于老表核对新表字段结束，核对数据{}条，更新新表数据{}条,总计耗时{}毫秒", response.getVerifyOldTableCount(),
@@ -319,38 +324,40 @@ public class DataVerifyService extends AbstractDataTransferBase {
     }
 
     private void verifyDataForUpdateNewTableByOldTable(DTransferVerifyJobRequest request,
-                                                       DTransferVerifyJobResponse response) {
+                                                       DTransferVerifyJobResponse response, JdbcTemplate jdbcTemplate) {
         while (true) {
             // 1. 从老表中分批读取数据
-            List<Map<String, Object>> oldRows = queryRows(request);
+            List<Map<String, Object>> oldRows = queryRows(request, response,jdbcTemplate);
             // 如果没有数据，退出循环
             if (CollectionUtils.isEmpty(oldRows)) {
                 break;
             }
-            response.setVerifyOldTableCount(response.getVerifyOldTableCount() + oldRows.size());
             // 2. 比较数据是否一致,不一致做更新
-            compareRows(oldRows, request, response);
+            compareRows(oldRows, request, response,jdbcTemplate);
         }
     }
 
-    private synchronized List<Map<String, Object>> queryRows(DTransferVerifyJobRequest request) {
-        log.info("{}表查询minId={}", request.getOlbTable(), request.getOlbTableStartId());
+    private synchronized List<Map<String, Object>> queryRows(DTransferVerifyJobRequest request,
+                                                             DTransferVerifyJobResponse response, JdbcTemplate jdbcTemplate) {
+        log.info("{}表查询minId={}", request.getOldTable(), request.getOldTableStartId());
         String sql = SqlUtils.buildSql(request);
         List<Map<String, Object>> oldRows = jdbcTemplate.queryForList(sql, request.getLimit());
         if (CollectionUtils.isEmpty(oldRows)) {
             return null;
         }
+        response.setVerifyOldTableCount(response.getVerifyOldTableCount() + oldRows.size());
+
         Map<String, Object> map = oldRows.get(oldRows.size() - 1);
         Object id = map.get("id");
         if (id instanceof BigInteger) {
             BigInteger valId = (BigInteger) id;
-            request.setOlbTableStartId(valId.longValue());
+            request.setOldTableStartId(valId.longValue());
         } else if (id instanceof Long) {
             Long valId = (Long) id;
-            request.setOlbTableStartId(valId);
+            request.setOldTableStartId(valId);
         } else if (id instanceof Integer) {
             Integer valId = (Integer) id;
-            request.setOlbTableStartId(Long.valueOf(valId));
+            request.setOldTableStartId(Long.valueOf(valId));
         } else {
             throw new RuntimeException("不能解析的id类型");
         }
@@ -366,7 +373,7 @@ public class DataVerifyService extends AbstractDataTransferBase {
      * @return:
      **/
     private void compareRows(List<Map<String, Object>> oldRows, DTransferVerifyJobRequest request,
-                             DTransferVerifyJobResponse response) {
+                             DTransferVerifyJobResponse response, JdbcTemplate jdbcTemplate) {
         // 创建查询条件的 Map，方便批量查询
         Set<Object> primaryKeys = oldRows.stream().map(row -> row.get(request.getPrimaryKeyName()))
             .collect(Collectors.toSet());
@@ -397,7 +404,7 @@ public class DataVerifyService extends AbstractDataTransferBase {
             Object shardingKeyValue = oldRow.get(request.getPrimaryKeyName());
             Map<String, Object> newRow = newRowsMap.get(primaryKeyValue);
             if (newRow == null) {
-                log.info("新表中缺少主键值为{}和分片键值为{}的记录", primaryKeyValue, shardingKeyValue);
+                log.warn("新表中缺少主键值为{}和分片键值为{}的记录", primaryKeyValue, shardingKeyValue);
                 continue;
             }
 
@@ -414,7 +421,7 @@ public class DataVerifyService extends AbstractDataTransferBase {
                     continue;
                 }
                 if (!Objects.equals(oldValue, newValue)) {
-                    log.info(String.format("主键为 %s 和分片键为 %s 的记录在字段 %s 上不一致, 老表值: %s, 新表值: %s", primaryKeyValue,
+                    log.warn(String.format("主键为 %s 和分片键为 %s 的记录在字段 %s 上不一致, 老表值: %s, 新表值: %s", primaryKeyValue,
                         shardingKeyValue, column, oldValue, newValue));
 
                     // 准备更新新表的字段
@@ -424,6 +431,9 @@ public class DataVerifyService extends AbstractDataTransferBase {
             }
 
             if (!updateFields.isEmpty()) {
+                if (VerifyModeEnum.ONLY_READ.name().equalsIgnoreCase(request.getVerifyMode())) {
+                    continue;
+                }
                 // 执行更新操作
                 String updateSql = String.format("UPDATE %s SET %s WHERE %s = ? AND %s = ?",
                     request.getNewTable().getNewTableLogicName(), String.join(", ", updateFields),

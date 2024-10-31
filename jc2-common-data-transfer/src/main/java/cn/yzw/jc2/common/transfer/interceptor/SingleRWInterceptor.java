@@ -22,9 +22,9 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import cn.yzw.jc2.common.transfer.config.DTransferConfig;
-import cn.yzw.jc2.common.transfer.model.DTransferDoubleWriteProperties;
-import cn.yzw.jc2.common.transfer.enums.ReadeTypeEnum;
+import cn.yzw.jc2.common.transfer.enums.ReadTypeEnum;
 import cn.yzw.jc2.common.transfer.enums.WriteTypeEnum;
+import cn.yzw.jc2.common.transfer.model.DTransferDoubleWriteProperties;
 import cn.yzw.jc2.common.transfer.utils.PluginUtils;
 import cn.yzw.jc2.common.transfer.utils.SqlUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
                                                                                      Integer.class }), })
 @ConditionalOnClass(DTransferConfig.class)
 @Order(1)
-public class SingleReadInterceptor implements Interceptor {
+public class SingleRWInterceptor implements Interceptor {
     @Resource
     private DTransferConfig dTransferConfig;
 
@@ -77,8 +77,8 @@ public class SingleReadInterceptor implements Interceptor {
         if (sqlCommandType == SqlCommandType.SELECT) {
             if (WriteTypeEnum.ONLY_WRITE_NEW_TABLE.name()
                 .equalsIgnoreCase(dTransferDoubleWriteProperties.getWriteType())
-                || ReadeTypeEnum.READE_NEW_TABLE.name()
-                    .equalsIgnoreCase(dTransferDoubleWriteProperties.getReadeType())) {
+                || ReadTypeEnum.READ_NEW_TABLE.name()
+                    .equalsIgnoreCase(dTransferDoubleWriteProperties.getReadType())) {
                 String modifiedSql = SqlUtils.replaceTableName(originalSql, oldTableName,
                     dTransferDoubleWriteProperties.getNewTableName());
                 log.info("SingleReadInterceptor execute after sql is: {}", modifiedSql);
@@ -94,7 +94,7 @@ public class SingleReadInterceptor implements Interceptor {
                 .equalsIgnoreCase(dTransferDoubleWriteProperties.getWriteType())) {
                 String modifiedSql = SqlUtils.replaceTableName(originalSql, oldTableName,
                     dTransferDoubleWriteProperties.getNewTableName());
-                log.info("DualReadInterceptor execute after sql is: {}", modifiedSql);
+                log.info("SingleReadInterceptor execute after sql is: {}", modifiedSql);
                 // 通过反射修改 BoundSql 中的 SQL 字段
                 Field sqlField = BoundSql.class.getDeclaredField("sql");
                 sqlField.setAccessible(true);

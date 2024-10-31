@@ -27,8 +27,8 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import cn.yzw.jc2.common.transfer.config.DTransferConfig;
-import cn.yzw.jc2.common.transfer.model.DTransferDoubleWriteProperties;
 import cn.yzw.jc2.common.transfer.enums.WriteTypeEnum;
+import cn.yzw.jc2.common.transfer.model.DTransferDoubleWriteProperties;
 import cn.yzw.jc2.common.transfer.utils.SqlUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -76,7 +76,7 @@ public class DoubleWriteInterceptor implements Interceptor {
             String originalSql = ms.getBoundSql(parameter).getSql();
             List<String> tableNames = SqlUtils.getTableNames(originalSql);
             if (CollectionUtils.isEmpty(tableNames) || tableNames.size() > 1) {
-                log.info("DoubleWriteInterceptor表名不符合拦截条件{}", tableNames);
+                log.warn("DoubleWriteInterceptor表名不符合拦截条件{}", tableNames);
                 return invocation.proceed();
             }
             String oldTableName = tableNames.get(0);

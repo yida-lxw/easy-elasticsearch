@@ -22,8 +22,8 @@ public class DTransferDoubleWriteProperties {
     private String  writeType;
 
     /**
-     * 读类型：READE_OLD_TABLE:读老表,READE_NEW_TABLE：读新表
+     * 读类型：READ_OLD_TABLE:读老表,READ_NEW_TABLE：读新表
      * 如果writeType=writeNewTable，强制读新表
      */
-    private String  readeType;
+    private String  readType;
 }

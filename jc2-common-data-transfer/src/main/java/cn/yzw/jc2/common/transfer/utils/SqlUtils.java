@@ -125,10 +125,10 @@ public class SqlUtils {
      * @return
      */
     public static String buildSql(DTransferVerifyJobRequest request) {
-        StringBuilder sb = new StringBuilder("select * from ").append(request.getOlbTable());
-        sb.append(" where id > ").append(request.getOlbTableStartId());
-        if (Objects.nonNull(request.getOlbTableEndId())) {
-            sb.append(" and id <= ").append(request.getOlbTableEndId());
+        StringBuilder sb = new StringBuilder("select * from ").append(request.getOldTable());
+        sb.append(" where id > ").append(request.getOldTableStartId());
+        if (Objects.nonNull(request.getOldTableEndId())) {
+            sb.append(" and id <= ").append(request.getOldTableEndId());
         }
         sb.append(" limit ?");
         String sql = sb.toString();

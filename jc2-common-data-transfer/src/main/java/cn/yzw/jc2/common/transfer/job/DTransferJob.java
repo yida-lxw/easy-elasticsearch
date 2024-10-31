@@ -1,14 +1,17 @@
 package cn.yzw.jc2.common.transfer.job;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.skywalking.apm.toolkit.trace.TraceContext;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.xxl.job.core.biz.model.ReturnT;
 import com.xxl.job.core.handler.annotation.XxlJob;
@@ -17,11 +20,15 @@ import com.xxl.job.core.log.XxlJobLogger;
 import cn.hutool.core.util.IdUtil;
 import cn.yzw.infra.component.utils.AssertUtils;
 import cn.yzw.infra.component.utils.JsonUtils;
+import cn.yzw.jc2.common.transfer.config.DTransferConfig;
 import cn.yzw.jc2.common.transfer.enums.VerifyTypeEnum;
+import cn.yzw.jc2.common.transfer.enums.WriteTypeEnum;
+import cn.yzw.jc2.common.transfer.model.DTransferDoubleWriteProperties;
 import cn.yzw.jc2.common.transfer.model.DTransferJobRequest;
 import cn.yzw.jc2.common.transfer.model.DTransferVerifyJobRequest;
 import cn.yzw.jc2.common.transfer.service.DTransferService;
 import cn.yzw.jc2.common.transfer.service.DataVerifyService;
+import cn.yzw.jc2.common.transfer.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -36,7 +43,8 @@ public class DTransferJob {
     private DTransferService dTransferService;
     @Resource
     private DataVerifyService dataVerifyService;
-
+    @Resource
+    private DTransferConfig   dTransferConfig;
     /**
      * @Description: 全量数据迁移job
      * @Author: lbl
@@ -62,6 +70,8 @@ public class DTransferJob {
             params, request, request.getJobId());
         try {
             long startTime = System.currentTimeMillis();
+            //初始化数据源jdbcTemplate
+            JdbcTemplate jdbcTemplate = CommonUtils.initJdbcTemplate(request.getDataSourceName());
             dTransferService.execute(request);
             log.info("本次任务id为{}表{}迁移任务执行耗时{}", request.getJobId(), request.getSourceTable(),
                 System.currentTimeMillis() - startTime);
@@ -88,24 +98,46 @@ public class DTransferJob {
         try {
             DTransferVerifyJobRequest request = JsonUtils.readAsObject(paramStr, DTransferVerifyJobRequest.class);
             AssertUtils.notNull(request, "入参不能为空");
-            AssertUtils.notBlank(request.getOlbTable(), "老表名不能为空");
+            AssertUtils.notBlank(request.getOldTable(), "老表名不能为空");
             AssertUtils.notNull(request.getNewTable(), "新表参数不能为空");
             AssertUtils.notBlank(request.getNewTable().getNewTableLogicName(), "新表逻辑表名不能为空");
             AssertUtils.notBlank(request.getNewTable().getNewTableRealNamePrefix(), "新表真实表名前缀不能为空");
             AssertUtils.notNull(request.getNewTable().getNewTableShardNum(), "新表分片数不能为空");
             AssertUtils.notBlank(request.getShardingKeyName(), "分片键不能为空");
             AssertUtils.notBlank(request.getPrimaryKeyName(), "唯一主键不能为空");
-            if (request.getOlbTableStartId() == null) {
-                request.setOlbTableStartId(Long.MIN_VALUE);
+            if (request.getOldTableStartId() == null) {
+                request.setOldTableStartId(Long.MIN_VALUE);
             }
             if (StringUtils.isBlank(request.getVerifyType())) {
                 request.setVerifyType(VerifyTypeEnum.COMPARE_ALL.name());
             }
             if (CollectionUtils.isEmpty(request.getColumns()) && CollectionUtils.isEmpty(request.getIgnoreColumns())) {
-                List<String> ignoreColumns = Arrays.asList("id", "update_time", "create_time");
+                Set<String> ignoreColumns = new HashSet<>();
+                ignoreColumns.add("id");
                 request.setIgnoreColumns(ignoreColumns);
             }
-            dataVerifyService.verifyData(request);
+            String oldTable = StringUtils.lowerCase(request.getOldTable());
+            Map<String, DTransferDoubleWriteProperties> writePropertiesMap = dTransferConfig
+                .getDoubleWritePropertiesMap();
+
+            if (MapUtils.isEmpty(writePropertiesMap)) {
+                log.warn("表{}不在双写阶段，不允许核对", oldTable);
+                return res;
+            }
+
+            if (!writePropertiesMap.containsKey(oldTable)
+                || !Boolean.TRUE.equals(writePropertiesMap.get(oldTable).getOpen())) {
+                log.warn("表{}不在双写阶段，不允许核对", oldTable);
+                return res;
+            }
+            DTransferDoubleWriteProperties dTransferDoubleWriteProperties = writePropertiesMap.get(oldTable);
+            if (!WriteTypeEnum.WRITE_ALL_TABLE.name().equalsIgnoreCase(dTransferDoubleWriteProperties.getWriteType())) {
+                log.warn("表{}不在双写阶段，不允许核对", oldTable);
+                return res;
+            }
+            //初始化数据源jdbcTemplate
+            JdbcTemplate jdbcTemplate = CommonUtils.initJdbcTemplate(request.getDataSourceName());
+            dataVerifyService.verifyData(request,jdbcTemplate);
         } catch (Exception ex) {
             log.error("定时任务checkDataJob执行时出现异常", ex);
             res = ReturnT.FAIL;
@@ -114,5 +146,6 @@ public class DTransferJob {
         }
         return res;
     }
+
 
 }

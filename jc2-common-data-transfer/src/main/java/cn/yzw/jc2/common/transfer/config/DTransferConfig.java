@@ -20,7 +20,7 @@ import cn.yzw.infra.component.utils.AssertUtils;
 import cn.yzw.infra.component.utils.JsonUtils;
 import cn.yzw.jc2.common.transfer.dao.impl.DataTransferDaoImpl;
 import cn.yzw.jc2.common.transfer.interceptor.DoubleWriteInterceptor;
-import cn.yzw.jc2.common.transfer.interceptor.SingleReadInterceptor;
+import cn.yzw.jc2.common.transfer.interceptor.SingleRWInterceptor;
 import cn.yzw.jc2.common.transfer.job.DTransferJob;
 import cn.yzw.jc2.common.transfer.model.DTransferDoubleWriteProperties;
 import cn.yzw.jc2.common.transfer.service.DTransferService;
@@ -88,9 +88,9 @@ public class DTransferConfig {
     }
 
     @Bean
-    public SingleReadInterceptor singleReadInterceptor() {
+    public SingleRWInterceptor singleReadInterceptor() {
         log.info("init mybatis SingleReadInterceptor");
-        return new SingleReadInterceptor();
+        return new SingleRWInterceptor();
     }
 
     /**
