@@ -39,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 @Intercepts({ @Signature(type = StatementHandler.class, method = "prepare", args = { Connection.class,
                                                                                      Integer.class }), })
 @ConditionalOnClass(DTransferConfig.class)
-@Order(1)
+@Order(-1)
 public class SingleRWInterceptor implements Interceptor {
     @Resource
     private DTransferConfig dTransferConfig;
