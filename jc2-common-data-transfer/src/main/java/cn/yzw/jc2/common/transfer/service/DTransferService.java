@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Resource;
 
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
 
 import cn.hutool.core.collection.CollectionUtil;
@@ -34,11 +35,11 @@ public class DTransferService {
     @Resource
     private DataTransferDao dataTransferDao;
 
-    public void execute(DTransferJobRequest request) {
+    public void executeJob(DTransferJobRequest request, JdbcTemplate jdbcTemplate) {
         if (CollectionUtil.isNotEmpty(request.getIdList())) {
             request.setEndId(Collections.max(request.getIdList()));
         } else if (Objects.isNull(request.getEndId())) {
-            Long maxId = dataTransferDao.getMaxId(request.getSourceTable(), request.getDataSourceName());
+            Long maxId = dataTransferDao.getMaxId(request.getSourceTable(), jdbcTemplate);
             request.setEndId(maxId);
         }
         if (request.getEndId() < request.getStartId()) {
@@ -55,7 +56,7 @@ public class DTransferService {
                 long startTime = System.currentTimeMillis();
                 log.info("任务id为{}分片执行开始，分片数量为{}", request.getJobId(), threadNum);
                 for (int i = 0; i < threadNum; i++) {
-                    tasks.add(pool.submit(() -> concurrentExecute(request, loop)));
+                    tasks.add(pool.submit(() -> concurrentExecute(request, loop, jdbcTemplate)));
                 }
                 tasks.forEach(e -> {
                     try {
@@ -76,12 +77,12 @@ public class DTransferService {
             }
         } else {
             log.info("任务id{}串行执行", request.getJobId());
-            serialExecute(request);
+            serialExecute(request, jdbcTemplate);
         }
 
     }
 
-    private void serialExecute(DTransferJobRequest request) {
+    private void serialExecute(DTransferJobRequest request, JdbcTemplate jdbcTemplate) {
         Long loop = request.getStartId();
         while (true) {
             try {
@@ -94,7 +95,7 @@ public class DTransferService {
                 readRequest.setLimit(request.getLimit());
                 readRequest.setQuerySql(request.getQuerySql());
                 readRequest.setDatasourceType(request.getDatasourceType());
-                readRequest.setDataSourceName(readRequest.getDataSourceName());
+                readRequest.setJdbcTemplate(jdbcTemplate);
                 long start = System.currentTimeMillis();
                 log.info("任务id为{}开始执行串行同步逻辑-查询，起始id为{}，limit：{}", request.getJobId(), loop, request.getLimit());
                 List<Map<String, Object>> dataList = dataTransferDao.getDataList(readRequest);
@@ -108,12 +109,12 @@ public class DTransferService {
                 }
                 //本批数据处理
                 long writeStart = System.currentTimeMillis();
-                log.info("任务id为{}开始执行串行同步逻辑-写开始，起始id为{}，limit：{}，获取数量：{}", request.getJobId(), loop,
-                        request.getLimit(), dataList.size());
-                this.execute(dataList, request);
+                log.info("任务id为{}开始执行串行同步逻辑-写开始，起始id为{}，limit：{}，获取数量：{}", request.getJobId(), loop, request.getLimit(),
+                    dataList.size());
+                this.execute(dataList, request, jdbcTemplate);
                 long writeEnd = System.currentTimeMillis();
                 log.info("任务id为{}开始执行串行同步逻辑-写结束，起始id为{}，limit：{}，获取数量：{}，花费时间：{}", request.getJobId(), loop,
-                        request.getLimit(), dataList.size(), writeEnd - writeStart);
+                    request.getLimit(), dataList.size(), writeEnd - writeStart);
                 loop = loop + request.getLimit();
             } catch (Exception e) {
                 log.error("data-sync-error: 同步异常. 任务id为{}，当前起始id为{}", request.getJobId(), loop);
@@ -121,7 +122,7 @@ public class DTransferService {
         }
     }
 
-    private void concurrentExecute(DTransferJobRequest request, AtomicLong loop) {
+    private void concurrentExecute(DTransferJobRequest request, AtomicLong loop, JdbcTemplate jdbcTemplate) {
         while (true) {
             //获取分片
             try {
@@ -140,7 +141,7 @@ public class DTransferService {
                 readRequest.setLimit(request.getLimit());
                 readRequest.setQuerySql(request.getQuerySql());
                 readRequest.setDatasourceType(request.getDatasourceType());
-                readRequest.setDataSourceName(readRequest.getDataSourceName());
+                readRequest.setJdbcTemplate(jdbcTemplate);
                 List<Map<String, Object>> dataList = dataTransferDao.getDataList(readRequest);
                 log.info("任务id为{}分段获取数据结束，获取到分段区间id为{}-{}，一共获取到数据量为：{}，查询花费时间为{}", request.getJobId(), executorStartId,
                     executorEndId, dataList.size(), System.currentTimeMillis() - startTime);
@@ -149,12 +150,13 @@ public class DTransferService {
                     long start = System.currentTimeMillis();
                     log.info("任务id为{}分段写数据开始，获取到分段区间id为{}-{}，一共写入的数据量为：{}", request.getJobId(), executorStartId,
                         executorEndId, dataList.size());
-                    this.execute(dataList, request);
+                    this.execute(dataList, request, jdbcTemplate);
                     log.info("任务id为{}分段写数据开始，获取到分段区间id为{}-{}，一共写入的数据量为：{}，花费时间为{}", request.getJobId(), executorStartId,
                         executorEndId, dataList.size(), System.currentTimeMillis() - start);
                 }
             } catch (Exception e) {
-                log.error("data-sync-error: 同步异常.任务id为{}，表名为{}，当前数据id:{}", request.getJobId(), request.getSourceTable(), loop.get(), e);
+                log.error("data-sync-error: 同步异常.任务id为{}，表名为{}，当前数据id:{}", request.getJobId(), request.getSourceTable(),
+                    loop.get(), e);
             }
         }
     }
@@ -164,7 +166,7 @@ public class DTransferService {
      * @author liangbaole
      * @date 2022/9/14
      */
-    private void execute(List<Map<String, Object>> dataList, DTransferJobRequest request) {
+    private void execute(List<Map<String, Object>> dataList, DTransferJobRequest request, JdbcTemplate jdbcTemplate) {
         try {
             //同步忽略id
             if (Boolean.TRUE.equals(request.getIgnoreId())) {
@@ -172,10 +174,9 @@ public class DTransferService {
                     map.remove("id");
                 }
             }
-            //分库分表前期逻辑表手动拼_NEW，因为双写与老表区分
             WriteRequest writeRequest = new WriteRequest();
             writeRequest.setTargetTable(request.getTargetTable());
-            writeRequest.setDataSourceName(request.getDataSourceName());
+            writeRequest.setJdbcTemplate(jdbcTemplate);
             List<String> columns = new ArrayList<>(dataList.get(0).keySet());
             List<String> valueHolders = new ArrayList<>(columns.size());
             for (int i = 0; i < columns.size(); i++) {

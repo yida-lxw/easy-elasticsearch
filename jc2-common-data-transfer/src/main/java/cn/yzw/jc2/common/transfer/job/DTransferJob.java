@@ -72,7 +72,7 @@ public class DTransferJob {
             long startTime = System.currentTimeMillis();
             //初始化数据源jdbcTemplate
             JdbcTemplate jdbcTemplate = CommonUtils.initJdbcTemplate(request.getDataSourceName());
-            dTransferService.execute(request);
+            dTransferService.executeJob(request, jdbcTemplate);
             log.info("本次任务id为{}表{}迁移任务执行耗时{}", request.getJobId(), request.getSourceTable(),
                 System.currentTimeMillis() - startTime);
             return new ReturnT<>(ReturnT.SUCCESS_CODE, "执行完成，任务id为" + request.getJobId());

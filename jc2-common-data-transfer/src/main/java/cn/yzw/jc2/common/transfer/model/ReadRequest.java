@@ -1,6 +1,7 @@
 package cn.yzw.jc2.common.transfer.model;
 
 import lombok.Data;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.io.Serializable;
 import java.util.List;
@@ -15,40 +16,41 @@ public class ReadRequest implements Serializable {
     /**
      * 表名
      */
-    private String     table;
+    private String       table;
 
     /**
      * 开始值，可空
      */
-    private Long       startId;
+    private Long         startId;
 
     /**
      * 结束值，可空
      */
-    private Long       endId;
+    private Long         endId;
 
     /**
      * 指定sysNo列表
      */
-    private List<Long> idList;
+    private List<Long>   idList;
 
     /**
      * 每批条数
      */
-    private Integer    limit          = 10;
+    private Integer      limit          = 10;
 
     /**
      * sql语句
      */
-    private String     querySql;
+    private String       querySql;
 
     /**
      * 数据库类型
      */
-    private String     datasourceType = "MySql";
+    private String       datasourceType = "MySql";
 
     /**
      * 数据源名称，多数据源必须配置
      */
-    private String     dataSourceName;
+    private JdbcTemplate jdbcTemplate;
+
 }

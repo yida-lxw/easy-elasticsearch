@@ -1,6 +1,7 @@
 package cn.yzw.jc2.common.transfer.model;
 
 import lombok.Data;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.io.Serializable;
 import java.util.List;
@@ -34,7 +35,7 @@ public class WriteRequest implements Serializable {
     private String         targetTable;
 
     /**
-     * 数据源名称，多数据源必须配置
+     * 数据库
      */
-    private String         dataSourceName;
+    private JdbcTemplate   jdbcTemplate;
 }

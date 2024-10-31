@@ -3,6 +3,8 @@ package cn.yzw.jc2.common.transfer.dao;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.jdbc.core.JdbcTemplate;
+
 import cn.yzw.jc2.common.transfer.model.ReadRequest;
 import cn.yzw.jc2.common.transfer.model.WriteRequest;
 
@@ -25,7 +27,7 @@ public interface DataTransferDao {
      * @param table
      * @return
      */
-    Long getMaxId(String table, String dataSourceName);
+    Long getMaxId(String table, JdbcTemplate jdbcTemplate);
 
     /**
      * 批量执行
