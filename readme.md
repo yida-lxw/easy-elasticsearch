@@ -14,19 +14,19 @@ This is a lightweight elasticsearch search component based on Java annotations, 
 | easy-elasticsearch-search       | seach client |
 
 ## instructions 接入说明
-###1.jar
+### 1.jar
 <dependency>
 <groupId>com.easy.elasticsearch</groupId>
 <artifactId>easy-elasticsearch-client</artifactId>
 <version>1.0.0-SNAPSHOT</version>
 </dependency>
 
-###2.项目正常配置es的地址 es config
+### 2.项目正常配置es的地址 es config
 spring.elasticsearch.rest.uris=http://127.0.0.1:9200,http://127.0.0.2:9200
 spring.elasticsearch.rest.username=elastic
 spring.elasticsearch.rest.password=elastic
 
-###3.init bean: EsQueryClient。：
+### 3.init bean: EsQueryClient。：
 ```java
 
 public class BeanConfig{
@@ -37,7 +37,7 @@ public class BeanConfig{
 }
 
 ```
-###4. Example 示例
+### 4. Example 示例
 ```java
 @Data
 public class EsSearchQuery implements Serializable {
