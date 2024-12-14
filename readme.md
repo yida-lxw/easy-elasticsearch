@@ -28,7 +28,7 @@ spring.elasticsearch.rest.uris= http://127.0.0.1:9200,http://127.0.0.2:9200
 spring.elasticsearch.rest.username= elastic
 spring.elasticsearch.rest.password= elastic
 ```
-### 3.init bean: EsQueryClient。：
+### 3.init bean: EsQueryClient
 ```java
 
 public class BeanConfig{
