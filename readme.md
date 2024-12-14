@@ -1,4 +1,5 @@
 # 应用说明
+This is a lightweight elasticsearch search component based on Java annotations, which solves the problem of difficulty in getting started with ES search. Developers do not need to pay attention to the details of ES query DSL statement concatenation. As long as they can clarify the business logic, annotate the corresponding annotations based on Java object properties, they can solve the complex search work of a day. It is not easy to complete open source in 1 hour. If you are interested in participating in open source research and development or consulting on technical usage details, please send an email: 382576883@qq.com
 这是一款基于java注解的轻量级的elasticsearch搜索的组件，解决了ES搜索入门难的问题，
 开发人员不需要关注es查询DSL语句拼接的细节，只要能理清业务逻辑，基于java对象属性，标注相应的注解，即可解决复杂搜索
 一天的工作，1小时搞定
