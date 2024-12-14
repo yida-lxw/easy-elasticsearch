@@ -15,12 +15,13 @@ This is a lightweight elasticsearch search component based on Java annotations, 
 
 ## instructions 接入说明
 ### 1.jar
+```xml
 <dependency>
 <groupId>com.easy.elasticsearch</groupId>
 <artifactId>easy-elasticsearch-client</artifactId>
 <version>1.0.0-SNAPSHOT</version>
 </dependency>
-
+```
 ### 2.项目正常配置es的地址 es config
 spring.elasticsearch.rest.uris=http://127.0.0.1:9200,http://127.0.0.2:9200
 spring.elasticsearch.rest.username=elastic
