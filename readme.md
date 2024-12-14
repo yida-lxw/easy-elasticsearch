@@ -54,12 +54,6 @@ public class EsSearchQuery implements Serializable {
     
 
     /**
-     * 条件选择code列表，包含本下
-     */
-    @EsMulti
-    private EsOrgMultiQuery       conditionOrgQuery;
-
-    /**
      * 名称
      */
     @EsLike(name = "orgName", leftLike = true, rightLike = true)
@@ -91,8 +85,8 @@ public class EsSearchQuery implements Serializable {
         EsSearchQuery query = new EsSearchQuery();
         query.setId("123");
         EsOrgMultiQuery orgMultiQuery = new EsOrgMultiQuery();
-        orgMultiQuery.setOrgCode("10005767661");
-        orgMultiQuery.setOrgCodeContainSub("13453460001");
+        orgMultiQuery.setCode("10005767661");
+        orgMultiQuery.setOrgContainSub("13453460001");
         request.setParam(query);
         request.setPageSize(20);
         request.setIndex("alias_idx_test");
