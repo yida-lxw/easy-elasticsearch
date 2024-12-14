@@ -23,10 +23,11 @@ This is a lightweight elasticsearch search component based on Java annotations, 
 </dependency>
 ```
 ### 2.项目正常配置es的地址 es config
-spring.elasticsearch.rest.uris=http://127.0.0.1:9200,http://127.0.0.2:9200
-spring.elasticsearch.rest.username=elastic
-spring.elasticsearch.rest.password=elastic
-
+```properties
+spring.elasticsearch.rest.uris= http://127.0.0.1:9200,http://127.0.0.2:9200
+spring.elasticsearch.rest.username= elastic
+spring.elasticsearch.rest.password= elastic
+```
 ### 3.init bean: EsQueryClient。：
 ```java
 
