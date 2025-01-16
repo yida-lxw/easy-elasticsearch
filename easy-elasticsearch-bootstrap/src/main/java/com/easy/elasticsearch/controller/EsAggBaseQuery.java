@@ -19,7 +19,7 @@ import lombok.Data;
  *
  * @author: liangbaole
  * @version: 1.0.0
- * @date: 2022-08-11 20:24
+ * @date: 2024-08-11 20:24
  */
 @Data
 public class EsAggBaseQuery implements Serializable {

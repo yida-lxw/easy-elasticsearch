@@ -15,7 +15,7 @@ import lombok.Data;
  *
  * @author: liangbaole
  * @version: 1.0.0
- * @date: 2022-08-11 20:24
+ * @date: 2024-08-11 20:24
  */
 @Data
 public class EsBaseQuery extends EsSearchBase implements Serializable {
@@ -33,9 +33,7 @@ public class EsBaseQuery extends EsSearchBase implements Serializable {
     private String                tenantId;
 
 
-    /**
-     * 条件选择code列表，包含本下
-     */
+
     @EsMulti
     private EsOrgMultiQuery       conditionOrgQuery;
 
@@ -52,14 +50,9 @@ public class EsBaseQuery extends EsSearchBase implements Serializable {
     private Long                  supCompanyId;
 
 
-    /**
-     * 创建时间
-     */
     @EsRange(name = "createTime", gt = true, includeLower = true)
     private Long                  createTimeStart;
-    /**
-     * 创建时间
-     */
+
     @EsRange(name = "createTime", lt = true, includeUpper = true)
     private Long                  createTimeEnd;
 
