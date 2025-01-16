@@ -42,46 +42,46 @@ public class BeanConfig{
 ```java
 @Data
 public class EsSearchQuery implements Serializable {
-
     /**
-     * equals
+     * equals 等于
      */
     @EsEquals(name = "_id")
     private String                id;
-
     /**
-     * equals
+     * not equals 不等于
      */
-    @EsEquals
+    @EsNotEquals
     private String                tenantId;
-    
-
     /**
-     * like
+     * like 模糊搜索 左右模糊可选 支持？*等特殊字符
      */
     @EsLike(name = "orgName", leftLike = true, rightLike = true)
     private String                purOrgName;
-
     /**
-     * equals
+     * es 分词匹配
      */
-    @EsEquals
-    private Long                  supCompanyId;
-
-
+    @EsMatch
+    private String                context;
     /**
-     * range
+     * range 范围查询起
      */
     @EsRange(name = "createTime", gt = true, includeLower = true)
     private Long                  createTimeStart;
     /**
-     * range
+     * range 范围查询止
      */
     @EsRange(name = "createTime", lt = true, includeUpper = true)
     private Long                  createTimeEnd;
-
+    /**
+     * 嵌套子查询
+     */
     @EsMulti
     private EsOrgMultiQuery       esOrgMultiQuery;
+    /**
+     * nested 
+     */
+    @EsNested(name = "subList")
+    private EsNestedQuery         nestedQuery;
     
     public String search() {
         SearchPageRequest<Object> request = new SearchPageRequest<>();
