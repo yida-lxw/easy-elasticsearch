@@ -1,15 +1,16 @@
 package com.easy.elastic.search.client;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.annotation.Resource;
-
+import com.easy.elastic.search.parse.EsQueryParse;
+import com.easy.elastic.search.parse.EsQueryResultParse;
+import com.easy.elastic.search.request.EsBaseSearchParam;
+import com.easy.elastic.search.request.ScrollRequest;
+import com.easy.elastic.search.request.SearchAfterRequest;
+import com.easy.elastic.search.request.SearchPageRequest;
+import com.easy.elastic.search.result.EsAggregationResult;
 import com.easy.elastic.search.result.ScrollResult;
+import com.easy.elastic.search.result.SearchAfterResult;
+import com.easy.elastic.search.result.SearchPageResult;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -22,15 +23,13 @@ import org.elasticsearch.search.SearchHits;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StopWatch;
 
-import com.easy.elastic.search.parse.EsQueryParse;
-import com.easy.elastic.search.parse.EsQueryResultParse;
-import com.easy.elastic.search.request.ScrollRequest;
-import com.easy.elastic.search.request.SearchAfterRequest;
-import com.easy.elastic.search.request.SearchPageRequest;
-import com.easy.elastic.search.result.EsAggregationResult;
-import com.easy.elastic.search.result.SearchAfterResult;
-import com.easy.elastic.search.result.SearchPageResult;
-import lombok.extern.slf4j.Slf4j;
+import javax.annotation.Resource;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * es查询客户端
@@ -52,7 +51,7 @@ public class EsQueryClient {
      * @param: oclass 出参类型
      * @return:
      **/
-    public <E, O> SearchPageResult<O> search(SearchPageRequest<E> request, Class<O> oclass) {
+    public <E extends EsBaseSearchParam, O> SearchPageResult<O> search(SearchPageRequest<E> request, Class<O> oclass) {
 
         SearchPageResult<O> pageResult = new SearchPageResult<>();
         StopWatch stopWatch = new StopWatch();
@@ -86,8 +85,8 @@ public class EsQueryClient {
      *  @Date:  2023/4/6 20:24
      *  @param:oclass 出参类型
      */
-    public <E, O> SearchAfterResult<O> searchAfter(SearchAfterRequest<E> request,
-                                                                        Class<O> oclass) {
+    public <E extends EsBaseSearchParam, O> SearchAfterResult<O> searchAfter(SearchAfterRequest<E> request,
+                                                                             Class<O> oclass) {
 
         SearchAfterResult<O> pageResult = new SearchAfterResult<>();
         StopWatch stopWatch = new StopWatch();
@@ -121,7 +120,7 @@ public class EsQueryClient {
      * @return 结果
      * @param: oclass 出参类型
      */
-    public <E, O> ScrollResult<O> scroll(ScrollRequest<E> request, Class<O> oclass) {
+    public <E extends EsBaseSearchParam, O> ScrollResult<O> scroll(ScrollRequest<E> request, Class<O> oclass) {
         ScrollResult<O> pageResult = new ScrollResult<>();
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
@@ -163,7 +162,7 @@ public class EsQueryClient {
      * @param: oclass 出参类型
      * @return:
      **/
-    public <E> Map<String, EsAggregationResult> agg(SearchPageRequest<E> request) {
+    public <E extends EsBaseSearchParam> Map<String, EsAggregationResult> agg(SearchPageRequest<E> request) {
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();

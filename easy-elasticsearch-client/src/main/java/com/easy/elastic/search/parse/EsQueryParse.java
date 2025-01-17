@@ -1,18 +1,41 @@
 package com.easy.elastic.search.parse;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-
+import com.easy.elastic.search.annotation.EsEquals;
+import com.easy.elastic.search.annotation.EsHasChildRelation;
+import com.easy.elastic.search.annotation.EsHasParentRelation;
+import com.easy.elastic.search.annotation.EsIn;
+import com.easy.elastic.search.annotation.EsIsNull;
+import com.easy.elastic.search.annotation.EsLike;
+import com.easy.elastic.search.annotation.EsMatch;
+import com.easy.elastic.search.annotation.EsMatchPhrase;
+import com.easy.elastic.search.annotation.EsMulti;
+import com.easy.elastic.search.annotation.EsNested;
+import com.easy.elastic.search.annotation.EsNotEquals;
+import com.easy.elastic.search.annotation.EsNotLike;
+import com.easy.elastic.search.annotation.EsNotNull;
+import com.easy.elastic.search.annotation.EsNotNullFields;
+import com.easy.elastic.search.annotation.EsRange;
+import com.easy.elastic.search.annotation.agg.EsAggNested;
+import com.easy.elastic.search.annotation.agg.EsAggTerms;
+import com.easy.elastic.search.annotation.agg.EsAggs;
+import com.easy.elastic.search.annotation.agg.EsAvg;
+import com.easy.elastic.search.annotation.agg.EsCardinality;
+import com.easy.elastic.search.annotation.agg.EsCount;
+import com.easy.elastic.search.annotation.agg.EsFilter;
+import com.easy.elastic.search.annotation.agg.EsMax;
+import com.easy.elastic.search.annotation.agg.EsMin;
+import com.easy.elastic.search.annotation.agg.EsSum;
 import com.easy.elastic.search.enums.EsNestedTypeEnum;
 import com.easy.elastic.search.enums.EsSearchTypeEnum;
+import com.easy.elastic.search.request.DynamicSearchField;
+import com.easy.elastic.search.request.EsBaseSearchParam;
+import com.easy.elastic.search.request.Order;
+import com.easy.elastic.search.request.ScrollRequest;
+import com.easy.elastic.search.request.SearchAfterRequest;
+import com.easy.elastic.search.request.SearchBaseRequest;
+import com.easy.elastic.search.request.SearchPageRequest;
 import com.easy.elastic.search.utils.JsonUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ClassUtils;
@@ -46,42 +69,16 @@ import org.elasticsearch.search.aggregations.metrics.MinAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.SumAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.ValueCountAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 
-import com.easy.elastic.search.annotation.EsEquals;
-import com.easy.elastic.search.annotation.EsHasChildRelation;
-import com.easy.elastic.search.annotation.EsHasParentRelation;
-import com.easy.elastic.search.annotation.EsIn;
-import com.easy.elastic.search.annotation.EsIsNull;
-import com.easy.elastic.search.annotation.EsLike;
-import com.easy.elastic.search.annotation.EsMatch;
-import com.easy.elastic.search.annotation.EsMatchPhrase;
-import com.easy.elastic.search.annotation.EsMulti;
-import com.easy.elastic.search.annotation.EsNested;
-import com.easy.elastic.search.annotation.EsNotEquals;
-import com.easy.elastic.search.annotation.EsNotLike;
-import com.easy.elastic.search.annotation.EsNotNull;
-import com.easy.elastic.search.annotation.EsNotNullFields;
-import com.easy.elastic.search.annotation.EsRange;
-import com.easy.elastic.search.annotation.agg.EsAggNested;
-import com.easy.elastic.search.annotation.agg.EsAggTerms;
-import com.easy.elastic.search.annotation.agg.EsAggs;
-import com.easy.elastic.search.annotation.agg.EsAvg;
-import com.easy.elastic.search.annotation.agg.EsCardinality;
-import com.easy.elastic.search.annotation.agg.EsCount;
-import com.easy.elastic.search.annotation.agg.EsFilter;
-import com.easy.elastic.search.annotation.agg.EsMax;
-import com.easy.elastic.search.annotation.agg.EsMin;
-import com.easy.elastic.search.annotation.agg.EsSum;
-import com.easy.elastic.search.request.DynamicSearchField;
-import com.easy.elastic.search.request.EsSearchBase;
-import com.easy.elastic.search.request.Order;
-import com.easy.elastic.search.request.ScrollRequest;
-import com.easy.elastic.search.request.SearchAfterRequest;
-import com.easy.elastic.search.request.SearchBaseRequest;
-import com.easy.elastic.search.request.SearchPageRequest;
-import lombok.extern.slf4j.Slf4j;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * ES查询解析
@@ -93,7 +90,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EsQueryParse {
 
-    public static <E> SearchRequest convert2EsPageQuery(SearchPageRequest<E> request) {
+    public static <E extends EsBaseSearchParam> SearchRequest convert2EsPageQuery(SearchPageRequest<E> request) {
 
         //构建查询
         SearchSourceBuilder sourceBuilder = buildBoolQueryBuilder(request);
@@ -113,7 +110,7 @@ public class EsQueryParse {
         return searchRequest;
     }
 
-    public static <E> SearchRequest convertSearchAfter2Query(SearchAfterRequest<E> searchAfterRequest) {
+    public static <E extends EsBaseSearchParam> SearchRequest convertSearchAfter2Query(SearchAfterRequest<E> searchAfterRequest) {
 
         //构建查询
         SearchSourceBuilder sourceBuilder = buildBoolQueryBuilder(searchAfterRequest);
@@ -131,10 +128,10 @@ public class EsQueryParse {
         return searchRequest;
     }
 
-    public static SearchRequest convert2AggQuery(String index, Object param, Supplier<QueryBuilder>... customQueries) {
+    public static <E extends EsBaseSearchParam> SearchRequest convert2AggQuery(String index, E userInputQueryParam, Supplier<QueryBuilder>... customQueries) {
         SearchRequest searchRequest = new SearchRequest(index);
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-        BoolQueryBuilder boolQueryBuilder = getBoolQueryBuilder(param);
+        BoolQueryBuilder boolQueryBuilder = getBoolQueryBuilder(userInputQueryParam);
 
         if (customQueries != null) {
             for (Supplier<QueryBuilder> customQuery : customQueries) {
@@ -154,7 +151,7 @@ public class EsQueryParse {
         return searchRequest;
     }
 
-    public static <E> SearchRequest convertScroll2Query(ScrollRequest<E> scrollRequest) {
+    public static <E extends EsBaseSearchParam> SearchRequest convertScroll2Query(ScrollRequest<E> scrollRequest) {
 
         //构建查询
         SearchSourceBuilder sourceBuilder = buildBoolQueryBuilder(scrollRequest);
@@ -170,7 +167,7 @@ public class EsQueryParse {
         return searchRequest;
     }
 
-    protected static <T> SearchSourceBuilder buildBoolQueryBuilder(SearchBaseRequest<T> requestParam) {
+    protected static <E extends EsBaseSearchParam> SearchSourceBuilder buildBoolQueryBuilder(SearchBaseRequest<E> requestParam) {
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
         BoolQueryBuilder boolQueryBuilder = buildBoolQueryBuilder(requestParam.getParam(), sourceBuilder,
                 requestParam.getCustomQueries());
@@ -197,14 +194,14 @@ public class EsQueryParse {
     }
 
 
-    private static <T> BoolQueryBuilder buildBoolQueryBuilder(T request, SearchSourceBuilder sourceBuilder,
+    private static <E extends EsBaseSearchParam> BoolQueryBuilder buildBoolQueryBuilder(E userInputQueryParam, SearchSourceBuilder sourceBuilder,
                                                               Supplier<QueryBuilder>[] customQueries) {
 
         BoolQueryBuilder boolQueryBuilder;
-        if (request == null) {
+        if (userInputQueryParam == null) {
             boolQueryBuilder = new BoolQueryBuilder();
         } else {
-            boolQueryBuilder = getBoolQueryBuilder(request);
+            boolQueryBuilder = getBoolQueryBuilder(userInputQueryParam);
         }
         if (customQueries != null && customQueries.length > 0) {
             for (int i = 0; i < customQueries.length; i++) {
@@ -233,16 +230,16 @@ public class EsQueryParse {
         }
     }
 
-    private static <T> void buildAggBuilder(T request, SearchSourceBuilder sourceBuilder) {
-        if (request == null) {
+    private static <E extends EsBaseSearchParam> void buildAggBuilder(E userInputQueryParam, SearchSourceBuilder sourceBuilder) {
+        if (userInputQueryParam == null) {
             return;
         }
-        getAggBuilder(request, null, sourceBuilder, null);
+        getAggBuilder(userInputQueryParam, null, sourceBuilder, null);
     }
 
-    private static <T> void getAggBuilder(T object, String nestedPath, SearchSourceBuilder sourceBuilder,
+    private static <E extends EsBaseSearchParam> void getAggBuilder(E userInputQueryParam, String nestedPath, SearchSourceBuilder sourceBuilder,
                                           AggregationBuilder aggregation) {
-        Class<?> clazz = object.getClass();
+        Class<?> clazz = userInputQueryParam.getClass();
         List<Field> fields = new ArrayList<>();
         while (clazz != null) {
             //当父类为null的时候说明到达了最上层的父类(Object类).
@@ -256,15 +253,15 @@ public class EsQueryParse {
                 if ("serialVersionUID".equals(field.getName())) {
                     continue;
                 }
-                Object value = ClassUtils.getPublicMethod(object.getClass(), "get" + captureName(field.getName()))
-                        .invoke(object);
+                Object value = ClassUtils.getPublicMethod(userInputQueryParam.getClass(), "get" + captureName(field.getName()))
+                        .invoke(userInputQueryParam);
 
                 try {
                     if (field.isAnnotationPresent(EsAggs.class)) {
                         if (value == null || field.getType() == String.class && StringUtils.isBlank((String) value)) {
                             continue;
                         }
-                        getAggBuilder(value, nestedPath, sourceBuilder, aggregation);
+                        getAggBuilder((EsBaseSearchParam) value, nestedPath, sourceBuilder, aggregation);
                     }
                     if (field.isAnnotationPresent(EsFilter.class)) {
                         if (value == null || field.getType() == String.class && StringUtils.isBlank((String) value)) {
@@ -272,7 +269,7 @@ public class EsQueryParse {
                         }
                         EsFilter filter = field.getAnnotation(EsFilter.class);
                         FilterAggregationBuilder builder = AggregationBuilders
-                                .filter(getFiledName(field, filter.name(), nestedPath), getBoolQueryBuilder(value));
+                                .filter(getFiledName(field, filter.name(), nestedPath), getBoolQueryBuilder((EsBaseSearchParam) value));
                         setBuilder(nestedPath, sourceBuilder, aggregation, value, false, builder);
                     }
                     if (field.isAnnotationPresent(EsSum.class)) {
@@ -337,7 +334,7 @@ public class EsQueryParse {
     private static void setBuilder(String nestedPath, SearchSourceBuilder sourceBuilder, AggregationBuilder aggregation,
                                    Object value, boolean hasSubAgg, AggregationBuilder subBuilder) {
         if (hasSubAgg) {
-            getAggBuilder(value, nestedPath, sourceBuilder, subBuilder);
+            getAggBuilder((EsBaseSearchParam) value, nestedPath, sourceBuilder, subBuilder);
         }
         if (aggregation != null) {
             aggregation.subAggregation(subBuilder);
@@ -346,13 +343,13 @@ public class EsQueryParse {
         }
     }
 
-    private static <T> BoolQueryBuilder getBoolQueryBuilder(Object object) {
-        return getBoolQueryBuilder(object, null);
+    private static <E extends EsBaseSearchParam> BoolQueryBuilder getBoolQueryBuilder(E userInputQueryParam) {
+        return getBoolQueryBuilder(userInputQueryParam, null);
     }
 
-    private static BoolQueryBuilder getBoolQueryBuilder(Object object, String nestedPath) {
+    private static <E extends EsBaseSearchParam> BoolQueryBuilder getBoolQueryBuilder(E userInputQueryParam, String nestedPath) {
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        Class<?> clazz = object.getClass();
+        Class<?> clazz = userInputQueryParam.getClass();
         List<Field> fields = new ArrayList<>();
         while (clazz != null) {
             //当父类为null的时候说明到达了最上层的父类(Object类).
@@ -366,8 +363,8 @@ public class EsQueryParse {
                 if ("serialVersionUID".equals(field.getName())) {
                     continue;
                 }
-                Object value = ClassUtils.getPublicMethod(object.getClass(), "get" + captureName(field.getName()))
-                        .invoke(object);
+                Object value = ClassUtils.getPublicMethod(userInputQueryParam.getClass(), "get" + captureName(field.getName()))
+                        .invoke(userInputQueryParam);
 
                 if (value == null || field.getType() == String.class && StringUtils.isBlank((String) value)) {
                     continue;
@@ -383,7 +380,7 @@ public class EsQueryParse {
                             String finalNestedPath = nestedPath;
                             vl.forEach(e -> {
                                 // 数据权限，需要是or / should查询
-                                bool.should(getBoolQueryBuilder(e, finalNestedPath));
+                                bool.should(getBoolQueryBuilder((EsBaseSearchParam) e, finalNestedPath));
                             });
                         } else {
                             bool.filter(getMultiQuery(field, value, nestedPath));
@@ -440,19 +437,19 @@ public class EsQueryParse {
                             Optional.ofNullable(query).orElse(new ArrayList<>()).forEach(boolQueryBuilder::filter);
                         }
                         if (field.isAnnotationPresent(EsNested.class)) {
-                            NestedQueryBuilder query = getNestedQuery(field, value);
+                            NestedQueryBuilder query = getNestedQuery(field, (EsBaseSearchParam) value);
                             boolQueryBuilder.filter(query);
                         }
                         if (field.isAnnotationPresent(EsHasChildRelation.class)) {
                             field.setAccessible(true);
-                            QueryBuilder builder = getBoolQueryBuilder(field.get(object), nestedPath);
+                            QueryBuilder builder = getBoolQueryBuilder((EsBaseSearchParam) field.get(userInputQueryParam), nestedPath);
                             HasChildQueryBuilder childQueryBuilder = getHasChildQueryBuilder(
                                     field.getAnnotation(EsHasChildRelation.class), builder);
                             boolQueryBuilder.filter(childQueryBuilder);
                         }
                         if (field.isAnnotationPresent(EsHasParentRelation.class)) {
                             field.setAccessible(true);
-                            QueryBuilder builder = getBoolQueryBuilder(field.get(object), nestedPath);
+                            QueryBuilder builder = getBoolQueryBuilder((EsBaseSearchParam) field.get(userInputQueryParam), nestedPath);
                             EsHasParentRelation relation = field.getAnnotation(EsHasParentRelation.class);
                             HasParentQueryBuilder childQueryBuilder = getHasParentQueryBuilder(builder, relation);
                             boolQueryBuilder.filter(childQueryBuilder);
@@ -466,19 +463,19 @@ public class EsQueryParse {
         } catch (Exception e) {
             log.warn("ES查询解析异常", e);
         }
-        boolQueryBuilderDynamicFields(object, boolQueryBuilder);
+        boolQueryBuilderDynamicFields(userInputQueryParam, boolQueryBuilder);
         //父子文档直接打在类上
         BoolQueryBuilder boolQueryBuilderTop;
-        if (object.getClass().isAnnotationPresent(EsHasChildRelation.class)) {
+        if (userInputQueryParam.getClass().isAnnotationPresent(EsHasChildRelation.class)) {
             // 外面再包裹一层query
             boolQueryBuilderTop = QueryBuilders.boolQuery();
             HasChildQueryBuilder hashChildQuery = getHasChildQueryBuilder(
-                    object.getClass().getAnnotation(EsHasChildRelation.class), boolQueryBuilder);
+                    userInputQueryParam.getClass().getAnnotation(EsHasChildRelation.class), boolQueryBuilder);
             boolQueryBuilderTop.filter(hashChildQuery);
-        } else if (object.getClass().isAnnotationPresent(EsHasParentRelation.class)) {
+        } else if (userInputQueryParam.getClass().isAnnotationPresent(EsHasParentRelation.class)) {
             // 外面再包裹一层query
             boolQueryBuilderTop = QueryBuilders.boolQuery();
-            EsHasParentRelation relation = object.getClass().getAnnotation(EsHasParentRelation.class);
+            EsHasParentRelation relation = userInputQueryParam.getClass().getAnnotation(EsHasParentRelation.class);
             HasParentQueryBuilder childQueryBuilder = getHasParentQueryBuilder(boolQueryBuilder, relation);
 
             boolQueryBuilderTop.filter(childQueryBuilder);
@@ -489,10 +486,10 @@ public class EsQueryParse {
     }
 
     private static void boolQueryBuilderDynamicFields(Object object, BoolQueryBuilder boolQueryBuilder) {
-        if (object instanceof EsSearchBase) {
-            EsSearchBase esSearchBase = (EsSearchBase) object;
-            if (esSearchBase.getDynamicFieldsMap() != null) {
-                esSearchBase.getDynamicFieldsMap().forEach((k, v) -> {
+        if (object instanceof EsBaseSearchParam) {
+            EsBaseSearchParam esBaseSearchParam = (EsBaseSearchParam) object;
+            if (esBaseSearchParam.getDynamicFieldsMap() != null) {
+                esBaseSearchParam.getDynamicFieldsMap().forEach((k, v) -> {
                     String searchType = v.getSearchType();
                     if (StringUtils.isBlank(searchType)) {
                         throw new IllegalArgumentException(String.format("搜索字段【%s】搜索类型不能为空", k));
@@ -789,10 +786,10 @@ public class EsQueryParse {
                 .collect(Collectors.toList());
     }
 
-    private static NestedQueryBuilder getNestedQuery(Field field, Object object) {
+    private static <E extends EsBaseSearchParam> NestedQueryBuilder getNestedQuery(Field field, E userInputQueryParam) {
         EsNested esNested = field.getAnnotation(EsNested.class);
         String nestedPath = getFiledName(field, esNested.name(), "");
-        QueryBuilder boolQueryBuilder = getBoolQueryBuilder(object, nestedPath);
+        QueryBuilder boolQueryBuilder = getBoolQueryBuilder(userInputQueryParam, nestedPath);
         NestedQueryBuilder nestedQueryBuilder = QueryBuilders.nestedQuery(nestedPath, boolQueryBuilder, ScoreMode.None);
 
         if (esNested.needInnerHits()) {
@@ -811,7 +808,7 @@ public class EsQueryParse {
      */
     private static BoolQueryBuilder getMultiQuery(Field field, Object value, String nestedPath) {
         EsMulti esMulti = field.getAnnotation(EsMulti.class);
-        BoolQueryBuilder boolQueryBuilder = getBoolQueryBuilder(value, nestedPath);
+        BoolQueryBuilder boolQueryBuilder = getBoolQueryBuilder((EsBaseSearchParam) value, nestedPath);
         return boolQueryBuilder;
     }
 
