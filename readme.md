@@ -28,7 +28,7 @@ spring.elasticsearch.rest.username= elastic
 spring.elasticsearch.rest.password= elastic
 ```
 
-```
+`
 ### 3. Example 示例
 ```java
 @Data
