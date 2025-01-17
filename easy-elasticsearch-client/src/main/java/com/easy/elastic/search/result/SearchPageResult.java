@@ -32,7 +32,7 @@ public class SearchPageResult<T> implements Serializable {
     /**
      * 页码总数
      */
-    private int totalPage;
+    private long totalPage;
     /**
      * 数据集合
      */
