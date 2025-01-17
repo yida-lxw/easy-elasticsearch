@@ -15,10 +15,10 @@ import java.util.List;
 
 @Configuration
 public class TestConfig {
-    @Bean
-    public EsQueryClient bean() {
-        return new EsQueryClient();
-    }
+//    @Bean
+//    public EsQueryClient bean() {
+//        return new EsQueryClient();
+//    }
     @Value("${spring.elasticsearch.rest.uris}")
     private String[] elasticsearchUris;
 

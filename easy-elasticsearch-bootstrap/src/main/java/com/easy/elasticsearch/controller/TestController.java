@@ -13,7 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -29,15 +31,16 @@ public class TestController {
 
         //DefaultEsBaseSearchParam query = new DefaultEsBaseSearchParam();
         EsOrgMultiQuery orgMultiQuery=new EsOrgMultiQuery();
-        orgMultiQuery.setOrgCode("10001");
-        orgMultiQuery.setOrgCodeContainSub("1000010001");
+        orgMultiQuery.setOrgCode("2000");
+        orgMultiQuery.setOrgCodeContainSub("2000i000");
+        List<EsOrgMultiQuery> orgMultiQueryList=new ArrayList<>();
+        orgMultiQueryList.add(orgMultiQuery);
 
         DefaultEsBaseSearchParam.DefaultEsBaseSearchParamBuilder defaultEsBaseSearchParamBuilder = new DefaultEsBaseSearchParam.DefaultEsBaseSearchParamBuilder();
-        DefaultEsBaseSearchParam defaultEsBaseSearchParam = defaultEsBaseSearchParamBuilder.setEsOrgMultiQuery(orgMultiQuery).build();
+        DefaultEsBaseSearchParam defaultEsBaseSearchParam = defaultEsBaseSearchParamBuilder.setEsOrgMultiQuery(orgMultiQueryList).build();
         request.setParam(defaultEsBaseSearchParam);
         request.setPageSize(2);
-        //        query.setSupOrgCode("10000");
-        request.setIndex("idx_psups_supplier_library_agg_info_qa_20230207");
+        request.setIndex("alias_idx_search_info_qa");
         SearchAfterResult<Map> afterResult = esQueryService.searchAfter(request, Map.class);
         int i = 1;
         while (i++ < 3) {
@@ -51,25 +54,27 @@ public class TestController {
     public String search() {
         SearchPageRequest<EsBaseSearchParam> request = new SearchPageRequest<>();
         EsOrgMultiQuery orgMultiQuery = new EsOrgMultiQuery();
-        orgMultiQuery.setOrgCode("10001");
-        orgMultiQuery.setOrgCodeContainSub("10001");
+        orgMultiQuery.setOrgCode("2000");
+        orgMultiQuery.setOrgCodeContainSub("2000i000");
+        List<EsOrgMultiQuery> orgMultiQueryList=new ArrayList<>();
+        orgMultiQueryList.add(orgMultiQuery);
 
         Map<String, DynamicSearchField> dynamicFieldsMap = new HashMap<>();
         DefaultEsBaseSearchParam.DefaultEsBaseSearchParamBuilder defaultEsBaseSearchParamBuilder = new DefaultEsBaseSearchParam.DefaultEsBaseSearchParamBuilder();
         //DefaultEsBaseSearchParam defaultEsBaseSearchParam = defaultEsBaseSearchParamBuilder.setEsOrgMultiQuery(orgMultiQuery).build();
-        defaultEsBaseSearchParamBuilder.setEsOrgMultiQuery(orgMultiQuery).setDynamicFieldsMap(dynamicFieldsMap);
+        defaultEsBaseSearchParamBuilder.setEsOrgMultiQuery(orgMultiQueryList).setDynamicFieldsMap(dynamicFieldsMap);
         DefaultEsBaseSearchParam defaultEsBaseSearchParam = defaultEsBaseSearchParamBuilder.build();
         DynamicSearchField field = new DynamicSearchField();
         field.setSearchType(EsSearchTypeEnum.esLike.name());
         field.setValue("门窗");
-        dynamicFieldsMap.put("secondCatName", field);
+        dynamicFieldsMap.put("catName", field);
         field=new DynamicSearchField();
         field.setSearchType(EsSearchTypeEnum.esEquals.name());
-        field.setValue("YJH20240715000005");
-        dynamicFieldsMap.put("planCode", field);
+        field.setValue("234353545");
+        dynamicFieldsMap.put("code", field);
         request.setParam(defaultEsBaseSearchParam);
         request.setPageSize(2);
-        request.setIndex("alias_idx_ppls_plan_monthly_info_qa");
+        request.setIndex("alias_idx_search_info_qa");
         SearchPageResult<Map> afterResult = esQueryService.search(request, Map.class);
         return  JsonUtils.writeAsJson(afterResult);
     }
@@ -79,7 +84,7 @@ public class TestController {
         SearchPageRequest<EsBaseSearchParam> request = new SearchPageRequest<>();
         EsAggBaseQuery query = new EsAggBaseQuery();
         request.setParam(query);
-        request.setIndex("alias_idx_ppls_plan_monthly_info_qa");
+        request.setIndex("alias_idx_search_info_qa");
         return  JsonUtils.writeAsJson(esQueryService.agg(request));
     }
 }
