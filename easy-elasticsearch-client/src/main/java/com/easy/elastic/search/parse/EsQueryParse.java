@@ -195,7 +195,7 @@ public class EsQueryParse {
 
 
     private static <E extends EsBaseSearchParam> BoolQueryBuilder buildBoolQueryBuilder(E userInputQueryParam, SearchSourceBuilder sourceBuilder,
-                                                              Supplier<QueryBuilder>[] customQueries) {
+                                                                                        Supplier<QueryBuilder>[] customQueries) {
 
         BoolQueryBuilder boolQueryBuilder;
         if (userInputQueryParam == null) {
@@ -238,7 +238,7 @@ public class EsQueryParse {
     }
 
     private static <E extends EsBaseSearchParam> void getAggBuilder(E userInputQueryParam, String nestedPath, SearchSourceBuilder sourceBuilder,
-                                          AggregationBuilder aggregation) {
+                                                                    AggregationBuilder aggregation) {
         Class<?> clazz = userInputQueryParam.getClass();
         List<Field> fields = new ArrayList<>();
         while (clazz != null) {
@@ -373,14 +373,19 @@ public class EsQueryParse {
                 try {
                     // EsMulti优先
                     if (field.isAnnotationPresent(EsMulti.class)) {
-                        // 多条件组合：品类权限、组织权限场景
+                        // 多条件组合
                         BoolQueryBuilder bool = QueryBuilders.boolQuery();
-                        if (field.getType().isAssignableFrom(List.class)) {
-                            List<Object> vl = (List) value;
+                        if (value instanceof List<?>) {
+                            List<?> vl = (List<?>) value;
                             String finalNestedPath = nestedPath;
+                            EsMulti esNotLike = field.getAnnotation(EsMulti.class);
                             vl.forEach(e -> {
-                                // 数据权限，需要是or / should查询
-                                bool.should(getBoolQueryBuilder((EsBaseSearchParam) e, finalNestedPath));
+                                // 需要是or / should查询
+                                if (esNotLike.isAnd()) {
+                                    bool.filter(getBoolQueryBuilder((EsBaseSearchParam) e, finalNestedPath));
+                                } else {
+                                    bool.should(getBoolQueryBuilder((EsBaseSearchParam) e, finalNestedPath));
+                                }
                             });
                         } else {
                             bool.filter(getMultiQuery(field, value, nestedPath));
@@ -411,10 +416,16 @@ public class EsQueryParse {
                         }
                         if (field.isAnnotationPresent(EsIn.class)) {
                             EsIn esIn = field.getAnnotation(EsIn.class);
-                            if (esIn.allowEmpty() || CollectionUtils.isNotEmpty((List<?>) value)) {
-                                QueryBuilder query = getInQuery(field, (List<?>) value, nestedPath);
+                            if (value instanceof List<?>) {
+                                if (CollectionUtils.isNotEmpty((List<?>) value)) {
+                                    QueryBuilder query = getInQuery(field, (List<?>) value, nestedPath);
+                                    boolQueryBuilder.filter(query);
+                                }
+                            } else if (esIn.allowEmpty()) {
+                                QueryBuilder query = getInQuery(field, new ArrayList<>(0), nestedPath);
                                 boolQueryBuilder.filter(query);
                             }
+
                         }
                         if (field.isAnnotationPresent(EsNotNull.class)) {
                             ExistsQueryBuilder query = getNotNullQuery(field, nestedPath);
@@ -807,7 +818,6 @@ public class EsQueryParse {
      * @return
      */
     private static BoolQueryBuilder getMultiQuery(Field field, Object value, String nestedPath) {
-        EsMulti esMulti = field.getAnnotation(EsMulti.class);
         BoolQueryBuilder boolQueryBuilder = getBoolQueryBuilder((EsBaseSearchParam) value, nestedPath);
         return boolQueryBuilder;
     }

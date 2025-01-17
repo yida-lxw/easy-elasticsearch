@@ -8,6 +8,7 @@ import com.easy.elastic.search.request.EsBaseSearchParam;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * es查询基类
@@ -51,7 +52,7 @@ public class DefaultEsBaseSearchParam extends EsBaseSearchParam implements Seria
     protected Long createTimeEnd;
 
     @EsMulti
-    protected EsOrgMultiQuery esOrgMultiQuery;
+    protected List<EsOrgMultiQuery> esOrgMultiQuery;
 
     public static class DefaultEsBaseSearchParamBuilder extends EsBaseSearchParamBuilder {
         private String id;
@@ -60,7 +61,7 @@ public class DefaultEsBaseSearchParam extends EsBaseSearchParam implements Seria
         private Long supCompanyId;
         private Long createTimeStart;
         private Long createTimeEnd;
-        private EsOrgMultiQuery esOrgMultiQuery;
+        private List<EsOrgMultiQuery> esOrgMultiQuery;
 
         @Override
         protected <E extends EsBaseSearchParam> E build() {
@@ -105,7 +106,7 @@ public class DefaultEsBaseSearchParam extends EsBaseSearchParam implements Seria
             return this;
         }
 
-        public DefaultEsBaseSearchParamBuilder setEsOrgMultiQuery(EsOrgMultiQuery esOrgMultiQuery) {
+        public DefaultEsBaseSearchParamBuilder setEsOrgMultiQuery(List<EsOrgMultiQuery> esOrgMultiQuery) {
             this.esOrgMultiQuery = esOrgMultiQuery;
             return this;
         }
@@ -134,7 +135,7 @@ public class DefaultEsBaseSearchParam extends EsBaseSearchParam implements Seria
             return createTimeEnd;
         }
 
-        public EsOrgMultiQuery getEsOrgMultiQuery() {
+        public List<EsOrgMultiQuery> getEsOrgMultiQuery() {
             return esOrgMultiQuery;
         }
     }
