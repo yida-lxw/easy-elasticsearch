@@ -1,11 +1,9 @@
 package com.easy.elasticsearch.controller;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import com.easy.elastic.search.client.EsQueryClient;
 import com.easy.elastic.search.enums.EsSearchTypeEnum;
 import com.easy.elastic.search.request.DynamicSearchField;
+import com.easy.elastic.search.request.EsBaseSearchParam;
 import com.easy.elastic.search.request.SearchAfterRequest;
 import com.easy.elastic.search.request.SearchPageRequest;
 import com.easy.elastic.search.result.SearchAfterResult;
@@ -14,6 +12,9 @@ import com.easy.elastic.search.utils.JsonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.Map;
 
 
 @RestController
@@ -24,8 +25,8 @@ public class TestController {
 
     @GetMapping("/rest/test")
     public String test() {
-        SearchAfterRequest<Object> request = new SearchAfterRequest<>();
-        EsBaseQuery query = new EsBaseQuery();
+        SearchAfterRequest<EsBaseSearchParam> request = new SearchAfterRequest<>();
+        DefaultEsBaseSearchParam query = new DefaultEsBaseSearchParam();
 //        query.setId("228048");
         EsOrgMultiQuery orgMultiQuery=new EsOrgMultiQuery();
         orgMultiQuery.setOrgCode("10001");
@@ -47,8 +48,8 @@ public class TestController {
 
     @GetMapping("/rest/search")
     public String search() {
-        SearchPageRequest<Object> request = new SearchPageRequest<>();
-        EsBaseQuery query = new EsBaseQuery();
+        SearchPageRequest<EsBaseSearchParam> request = new SearchPageRequest<>();
+        DefaultEsBaseSearchParam query = new DefaultEsBaseSearchParam();
 //                query.setId("228048");
         EsOrgMultiQuery orgMultiQuery = new EsOrgMultiQuery();
         orgMultiQuery.setOrgCode("10001");
@@ -75,11 +76,10 @@ public class TestController {
 
     @GetMapping("/rest/agg")
     public String agg() {
-        SearchPageRequest<Object> request = new SearchPageRequest<>();
+        SearchPageRequest<EsBaseSearchParam> request = new SearchPageRequest<>();
         EsAggBaseQuery query = new EsAggBaseQuery();
         request.setParam(query);
         request.setIndex("alias_idx_ppls_plan_monthly_info_qa");
-
         return  JsonUtils.writeAsJson(esQueryService.agg(request));
     }
 }

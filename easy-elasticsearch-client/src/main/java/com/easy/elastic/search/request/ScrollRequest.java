@@ -1,7 +1,6 @@
 package com.easy.elastic.search.request;
 
 import lombok.Data;
-import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 
@@ -13,7 +12,7 @@ import java.io.Serializable;
  * @Version 1.0
  */
 @Data
-public class ScrollRequest<E> extends SearchBaseRequest<E> implements Serializable {
+public class ScrollRequest<E extends EsBaseSearchParam> extends SearchBaseRequest<E> implements Serializable {
 
     /**
      * scrollId
@@ -26,8 +25,8 @@ public class ScrollRequest<E> extends SearchBaseRequest<E> implements Serializab
     private Long     keepAliveTimeMinute = 5L;
 
     /**
-     * 每页大小
+	 * 每页大小(默认值:20)
      */
-    private int      pageSize            = 100;
+	private int pageSize = 20;
 
 }

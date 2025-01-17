@@ -1,12 +1,11 @@
 package com.easy.elastic.search.request;
 
+import lombok.Data;
+import org.elasticsearch.index.query.QueryBuilder;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.function.Supplier;
-
-import org.elasticsearch.index.query.QueryBuilder;
-
-import lombok.Data;
 
 /**
  * @Description: 请求基类
@@ -14,7 +13,7 @@ import lombok.Data;
  * @Date: 2023/4/6
  **/
 @Data
-public class SearchBaseRequest<E> implements Serializable {
+public class SearchBaseRequest<E extends EsBaseSearchParam> implements Serializable {
     /**
      * 租户ID
      */

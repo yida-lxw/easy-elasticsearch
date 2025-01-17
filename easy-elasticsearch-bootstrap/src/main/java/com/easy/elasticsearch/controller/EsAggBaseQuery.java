@@ -1,7 +1,5 @@
 package com.easy.elasticsearch.controller;
 
-import java.io.Serializable;
-
 import com.easy.elastic.search.annotation.EsEquals;
 import com.easy.elastic.search.annotation.agg.EsAggNested;
 import com.easy.elastic.search.annotation.agg.EsAggTerms;
@@ -12,7 +10,10 @@ import com.easy.elastic.search.annotation.agg.EsCount;
 import com.easy.elastic.search.annotation.agg.EsFilter;
 import com.easy.elastic.search.annotation.agg.EsMax;
 import com.easy.elastic.search.annotation.agg.EsSum;
+import com.easy.elastic.search.request.EsBaseSearchParam;
 import lombok.Data;
+
+import java.io.Serializable;
 
 /**
  * es查询基类
@@ -22,7 +23,7 @@ import lombok.Data;
  * @date: 2024-08-11 20:24
  */
 @Data
-public class EsAggBaseQuery implements Serializable {
+public class EsAggBaseQuery extends EsBaseSearchParam implements Serializable {
     @EsEquals
     private Integer               deleted;
     @EsAggs

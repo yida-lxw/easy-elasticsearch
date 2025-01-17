@@ -1,14 +1,13 @@
 package com.easy.elasticsearch.controller;
 
-import java.io.Serializable;
-import java.util.List;
-
 import com.easy.elastic.search.annotation.EsEquals;
 import com.easy.elastic.search.annotation.EsLike;
 import com.easy.elastic.search.annotation.EsMulti;
 import com.easy.elastic.search.annotation.EsRange;
-import com.easy.elastic.search.request.EsSearchBase;
+import com.easy.elastic.search.request.EsBaseSearchParam;
 import lombok.Data;
+
+import java.io.Serializable;
 
 /**
  * es查询基类
@@ -18,7 +17,7 @@ import lombok.Data;
  * @date: 2024-08-11 20:24
  */
 @Data
-public class EsBaseQuery extends EsSearchBase implements Serializable {
+public class DefaultEsBaseSearchParam extends EsBaseSearchParam implements Serializable {
 
     /**
      * 同主UK
