@@ -22,4 +22,19 @@ public abstract class EsBaseSearchParam implements Serializable {
     public void setDynamicFieldsMap(Map<String, DynamicSearchField> dynamicFieldsMap) {
         this.dynamicFieldsMap = dynamicFieldsMap;
     }
+
+    public static abstract class EsBaseSearchParamBuilder {
+        private Map<String, DynamicSearchField> dynamicFieldsMap;
+
+        public Map<String, DynamicSearchField> getDynamicFieldsMap() {
+            return dynamicFieldsMap;
+        }
+
+        public EsBaseSearchParamBuilder setDynamicFieldsMap(Map<String, DynamicSearchField> dynamicFieldsMap) {
+            this.dynamicFieldsMap = dynamicFieldsMap;
+            return this;
+        }
+
+        protected abstract <E extends EsBaseSearchParam> E build();
+    }
 }

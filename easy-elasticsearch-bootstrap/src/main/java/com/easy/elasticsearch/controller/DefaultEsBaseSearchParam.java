@@ -23,38 +23,119 @@ public class DefaultEsBaseSearchParam extends EsBaseSearchParam implements Seria
      * 同主UK
      */
     @EsEquals(name = "_id")
-    private String                id;
+    protected String id;
 
     /**
      * 租户
      */
     @EsEquals
-    private String                tenantId;
-
-
-
-    @EsMulti
-    private EsOrgMultiQuery       conditionOrgQuery;
+    protected String tenantId;
 
     /**
      * 名称
      */
     @EsLike(name = "orgName", leftLike = true, rightLike = true)
-    private String                purOrgName;
+    protected String purOrgName;
 
     /**
      * 供应商id
      */
     @EsEquals
-    private Long                  supCompanyId;
+    protected Long supCompanyId;
 
 
     @EsRange(name = "createTime", gt = true, includeLower = true)
-    private Long                  createTimeStart;
+    protected Long createTimeStart;
 
     @EsRange(name = "createTime", lt = true, includeUpper = true)
-    private Long                  createTimeEnd;
+    protected Long createTimeEnd;
 
     @EsMulti
-    private EsOrgMultiQuery       esOrgMultiQuery;
+    protected EsOrgMultiQuery esOrgMultiQuery;
+
+    public static class DefaultEsBaseSearchParamBuilder extends EsBaseSearchParamBuilder {
+        private String id;
+        private String tenantId;
+        private String purOrgName;
+        private Long supCompanyId;
+        private Long createTimeStart;
+        private Long createTimeEnd;
+        private EsOrgMultiQuery esOrgMultiQuery;
+
+        @Override
+        protected <E extends EsBaseSearchParam> E build() {
+            DefaultEsBaseSearchParam esBaseSearchParam = new DefaultEsBaseSearchParam();
+            esBaseSearchParam.setId(this.getId());
+            esBaseSearchParam.setTenantId(this.getTenantId());
+            esBaseSearchParam.setPurOrgName(this.getPurOrgName());
+            esBaseSearchParam.setSupCompanyId(this.getSupCompanyId());
+            esBaseSearchParam.setCreateTimeStart(this.getCreateTimeStart());
+            esBaseSearchParam.setCreateTimeEnd(this.getCreateTimeEnd());
+            esBaseSearchParam.setEsOrgMultiQuery(this.getEsOrgMultiQuery());
+            return (E) esBaseSearchParam;
+        }
+
+        public DefaultEsBaseSearchParamBuilder setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public DefaultEsBaseSearchParamBuilder setTenantId(String tenantId) {
+            this.tenantId = tenantId;
+            return this;
+        }
+
+        public DefaultEsBaseSearchParamBuilder setPurOrgName(String purOrgName) {
+            this.purOrgName = purOrgName;
+            return this;
+        }
+
+        public DefaultEsBaseSearchParamBuilder setSupCompanyId(Long supCompanyId) {
+            this.supCompanyId = supCompanyId;
+            return this;
+        }
+
+        public DefaultEsBaseSearchParamBuilder setCreateTimeStart(Long createTimeStart) {
+            this.createTimeStart = createTimeStart;
+            return this;
+        }
+
+        public DefaultEsBaseSearchParamBuilder setCreateTimeEnd(Long createTimeEnd) {
+            this.createTimeEnd = createTimeEnd;
+            return this;
+        }
+
+        public DefaultEsBaseSearchParamBuilder setEsOrgMultiQuery(EsOrgMultiQuery esOrgMultiQuery) {
+            this.esOrgMultiQuery = esOrgMultiQuery;
+            return this;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public String getTenantId() {
+            return tenantId;
+        }
+
+        public String getPurOrgName() {
+            return purOrgName;
+        }
+
+        public Long getSupCompanyId() {
+            return supCompanyId;
+        }
+
+        public Long getCreateTimeStart() {
+            return createTimeStart;
+        }
+
+        public Long getCreateTimeEnd() {
+            return createTimeEnd;
+        }
+
+        public EsOrgMultiQuery getEsOrgMultiQuery() {
+            return esOrgMultiQuery;
+        }
+    }
 }

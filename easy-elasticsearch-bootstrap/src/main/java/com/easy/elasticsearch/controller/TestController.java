@@ -26,14 +26,15 @@ public class TestController {
     @GetMapping("/rest/test")
     public String test() {
         SearchAfterRequest<EsBaseSearchParam> request = new SearchAfterRequest<>();
-        DefaultEsBaseSearchParam query = new DefaultEsBaseSearchParam();
-//        query.setId("228048");
+
+        //DefaultEsBaseSearchParam query = new DefaultEsBaseSearchParam();
         EsOrgMultiQuery orgMultiQuery=new EsOrgMultiQuery();
         orgMultiQuery.setOrgCode("10001");
         orgMultiQuery.setOrgCodeContainSub("1000010001");
-        query.setEsOrgMultiQuery(orgMultiQuery);
-        request.setParam(query);
-//                query.setCreateName("呵呵");
+
+        DefaultEsBaseSearchParam.DefaultEsBaseSearchParamBuilder defaultEsBaseSearchParamBuilder = new DefaultEsBaseSearchParam.DefaultEsBaseSearchParamBuilder();
+        DefaultEsBaseSearchParam defaultEsBaseSearchParam = defaultEsBaseSearchParamBuilder.setEsOrgMultiQuery(orgMultiQuery).build();
+        request.setParam(defaultEsBaseSearchParam);
         request.setPageSize(2);
         //        query.setSupOrgCode("10000");
         request.setIndex("idx_psups_supplier_library_agg_info_qa_20230207");
@@ -49,28 +50,27 @@ public class TestController {
     @GetMapping("/rest/search")
     public String search() {
         SearchPageRequest<EsBaseSearchParam> request = new SearchPageRequest<>();
-        DefaultEsBaseSearchParam query = new DefaultEsBaseSearchParam();
-//                query.setId("228048");
         EsOrgMultiQuery orgMultiQuery = new EsOrgMultiQuery();
         orgMultiQuery.setOrgCode("10001");
         orgMultiQuery.setOrgCodeContainSub("10001");
-//        query.setEsOrgMultiQuery(orgMultiQuery);
-        query.setDynamicFieldsMap(new HashMap<>());
-        DynamicSearchField field=new DynamicSearchField();
+
+        Map<String, DynamicSearchField> dynamicFieldsMap = new HashMap<>();
+        DefaultEsBaseSearchParam.DefaultEsBaseSearchParamBuilder defaultEsBaseSearchParamBuilder = new DefaultEsBaseSearchParam.DefaultEsBaseSearchParamBuilder();
+        //DefaultEsBaseSearchParam defaultEsBaseSearchParam = defaultEsBaseSearchParamBuilder.setEsOrgMultiQuery(orgMultiQuery).build();
+        defaultEsBaseSearchParamBuilder.setEsOrgMultiQuery(orgMultiQuery).setDynamicFieldsMap(dynamicFieldsMap);
+        DefaultEsBaseSearchParam defaultEsBaseSearchParam = defaultEsBaseSearchParamBuilder.build();
+        DynamicSearchField field = new DynamicSearchField();
         field.setSearchType(EsSearchTypeEnum.esLike.name());
         field.setValue("门窗");
-        query.getDynamicFieldsMap().put("secondCatName",field);
+        dynamicFieldsMap.put("secondCatName", field);
         field=new DynamicSearchField();
         field.setSearchType(EsSearchTypeEnum.esEquals.name());
         field.setValue("YJH20240715000005");
-        query.getDynamicFieldsMap().put("planCode",field);
-        request.setParam(query);
-        //        query.setCreateName("呵呵");
+        dynamicFieldsMap.put("planCode", field);
+        request.setParam(defaultEsBaseSearchParam);
         request.setPageSize(2);
-        //        query.setSupOrgCode("10000");
         request.setIndex("alias_idx_ppls_plan_monthly_info_qa");
         SearchPageResult<Map> afterResult = esQueryService.search(request, Map.class);
-
         return  JsonUtils.writeAsJson(afterResult);
     }
 
