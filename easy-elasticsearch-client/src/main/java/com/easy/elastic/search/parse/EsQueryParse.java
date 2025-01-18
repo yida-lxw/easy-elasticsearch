@@ -240,17 +240,12 @@ public class EsQueryParse {
     private static <E extends EsBaseSearchParam> void getAggBuilder(E userInputQueryParam, String nestedPath, SearchSourceBuilder sourceBuilder,
                                                                     AggregationBuilder aggregation) {
         Class<?> clazz = userInputQueryParam.getClass();
-        List<Field> fields = new ArrayList<>();
-        while (clazz != null) {
-            //当父类为null的时候说明到达了最上层的父类(Object类).
-            fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
-            //得到父类,然后赋给自己
-            clazz = clazz.getSuperclass();
-        }
+        List<Field> fields = getAllFields(clazz);
+
         nestedPath = nestedPath == null ? "" : nestedPath;
         try {
             for (Field field : fields) {
-                if ("serialVersionUID".equals(field.getName())) {
+                if ("serialVersionUID".equals(field.getName()) || field.isSynthetic()) {
                     continue;
                 }
                 Object value = ClassUtils.getPublicMethod(userInputQueryParam.getClass(), "get" + captureName(field.getName()))
@@ -347,156 +342,8 @@ public class EsQueryParse {
         return getBoolQueryBuilder(userInputQueryParam, null);
     }
 
-    private static <E extends EsBaseSearchParam> BoolQueryBuilder getBoolQueryBuilder(E userInputQueryParam, String nestedPath) {
-        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        Class<?> clazz = userInputQueryParam.getClass();
-        List<Field> fields = new ArrayList<>();
-        while (clazz != null) {
-            //当父类为null的时候说明到达了最上层的父类(Object类).
-            fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
-            //得到父类,然后赋给自己
-            clazz = clazz.getSuperclass();
-        }
-        nestedPath = nestedPath == null ? "" : nestedPath;
-        try {
-            for (Field field : fields) {
-                if ("serialVersionUID".equals(field.getName())) {
-                    continue;
-                }
-                Object value = ClassUtils.getPublicMethod(userInputQueryParam.getClass(), "get" + captureName(field.getName()))
-                        .invoke(userInputQueryParam);
 
-                if (value == null || field.getType() == String.class && StringUtils.isBlank((String) value)) {
-                    continue;
-                }
-
-                try {
-                    // EsMulti优先
-                    if (field.isAnnotationPresent(EsMulti.class)) {
-                        // 多条件组合
-                        BoolQueryBuilder bool = QueryBuilders.boolQuery();
-                        if (value instanceof List<?>) {
-                            List<?> vl = (List<?>) value;
-                            String finalNestedPath = nestedPath;
-                            EsMulti esNotLike = field.getAnnotation(EsMulti.class);
-                            vl.forEach(e -> {
-                                // 需要是or / should查询
-                                if (esNotLike.isAnd()) {
-                                    bool.filter(getBoolQueryBuilder((EsBaseSearchParam) e, finalNestedPath));
-                                } else {
-                                    bool.should(getBoolQueryBuilder((EsBaseSearchParam) e, finalNestedPath));
-                                }
-                            });
-                        } else {
-                            bool.filter(getMultiQuery(field, value, nestedPath));
-                        }
-                        boolQueryBuilder.filter(bool);
-                    } else {
-                        if (field.isAnnotationPresent(EsLike.class)) {
-                            String val = wildcardOptimize((String) value);
-                            WildcardQueryBuilder query = getLikeQuery(field, val, nestedPath);
-                            boolQueryBuilder.filter(query);
-                        }
-                        if (field.isAnnotationPresent(EsNotLike.class)) {
-                            String val = wildcardOptimize((String) value);
-                            WildcardQueryBuilder notLikeQuery = getNotLikeQuery(field, val, nestedPath);
-                            boolQueryBuilder.mustNot().add(notLikeQuery);
-                        }
-                        if (field.isAnnotationPresent(EsEquals.class)) {
-                            TermQueryBuilder query = getEqualsQuery(field, value, nestedPath);
-                            boolQueryBuilder.filter(query);
-                        }
-                        if (field.isAnnotationPresent(EsNotEquals.class)) {
-                            TermQueryBuilder query = getNotEqualsQuery(field, value, nestedPath);
-                            boolQueryBuilder.mustNot().add(query);
-                        }
-                        if (field.isAnnotationPresent(EsRange.class)) {
-                            RangeQueryBuilder query = getRangeQuery(field, value, nestedPath);
-                            boolQueryBuilder.filter(query);
-                        }
-                        if (field.isAnnotationPresent(EsIn.class)) {
-                            EsIn esIn = field.getAnnotation(EsIn.class);
-                            if (value instanceof List<?>) {
-                                if (CollectionUtils.isNotEmpty((List<?>) value)) {
-                                    QueryBuilder query = getInQuery(field, (List<?>) value, nestedPath);
-                                    boolQueryBuilder.filter(query);
-                                }
-                            } else if (esIn.allowEmpty()) {
-                                QueryBuilder query = getInQuery(field, new ArrayList<>(0), nestedPath);
-                                boolQueryBuilder.filter(query);
-                            }
-
-                        }
-                        if (field.isAnnotationPresent(EsNotNull.class)) {
-                            ExistsQueryBuilder query = getNotNullQuery(field, nestedPath);
-                            boolQueryBuilder.filter(query);
-                        }
-                        if (field.isAnnotationPresent(EsIsNull.class)) {
-                            BoolQueryBuilder query = getIsNullQuery(field, nestedPath);
-                            boolQueryBuilder.filter(query);
-                        }
-                        if (field.isAnnotationPresent(EsMatchPhrase.class)) {
-                            MatchPhraseQueryBuilder matchPhrase = getMatchPhrase(field, value, nestedPath);
-                            boolQueryBuilder.filter(matchPhrase);
-                        }
-                        if (field.isAnnotationPresent(EsMatch.class)) {
-                            MatchQueryBuilder match = getMatch(field, value, nestedPath);
-                            boolQueryBuilder.filter(match);
-                        }
-                        if (field.isAnnotationPresent(EsNotNullFields.class)) {
-                            List<ExistsQueryBuilder> query = getNotNullQuery((List<String>) value, nestedPath);
-                            Optional.ofNullable(query).orElse(new ArrayList<>()).forEach(boolQueryBuilder::filter);
-                        }
-                        if (field.isAnnotationPresent(EsNested.class)) {
-                            NestedQueryBuilder query = getNestedQuery(field, (EsBaseSearchParam) value);
-                            boolQueryBuilder.filter(query);
-                        }
-                        if (field.isAnnotationPresent(EsHasChildRelation.class)) {
-                            field.setAccessible(true);
-                            QueryBuilder builder = getBoolQueryBuilder((EsBaseSearchParam) field.get(userInputQueryParam), nestedPath);
-                            HasChildQueryBuilder childQueryBuilder = getHasChildQueryBuilder(
-                                    field.getAnnotation(EsHasChildRelation.class), builder);
-                            boolQueryBuilder.filter(childQueryBuilder);
-                        }
-                        if (field.isAnnotationPresent(EsHasParentRelation.class)) {
-                            field.setAccessible(true);
-                            QueryBuilder builder = getBoolQueryBuilder((EsBaseSearchParam) field.get(userInputQueryParam), nestedPath);
-                            EsHasParentRelation relation = field.getAnnotation(EsHasParentRelation.class);
-                            HasParentQueryBuilder childQueryBuilder = getHasParentQueryBuilder(builder, relation);
-                            boolQueryBuilder.filter(childQueryBuilder);
-                        }
-                    }
-                } catch (Exception e) {
-                    log.warn("ES查询解析异常1: ", e);
-                }
-
-            }
-        } catch (Exception e) {
-            log.warn("ES查询解析异常", e);
-        }
-        boolQueryBuilderDynamicFields(userInputQueryParam, boolQueryBuilder);
-        //父子文档直接打在类上
-        BoolQueryBuilder boolQueryBuilderTop;
-        if (userInputQueryParam.getClass().isAnnotationPresent(EsHasChildRelation.class)) {
-            // 外面再包裹一层query
-            boolQueryBuilderTop = QueryBuilders.boolQuery();
-            HasChildQueryBuilder hashChildQuery = getHasChildQueryBuilder(
-                    userInputQueryParam.getClass().getAnnotation(EsHasChildRelation.class), boolQueryBuilder);
-            boolQueryBuilderTop.filter(hashChildQuery);
-        } else if (userInputQueryParam.getClass().isAnnotationPresent(EsHasParentRelation.class)) {
-            // 外面再包裹一层query
-            boolQueryBuilderTop = QueryBuilders.boolQuery();
-            EsHasParentRelation relation = userInputQueryParam.getClass().getAnnotation(EsHasParentRelation.class);
-            HasParentQueryBuilder childQueryBuilder = getHasParentQueryBuilder(boolQueryBuilder, relation);
-
-            boolQueryBuilderTop.filter(childQueryBuilder);
-        } else {
-            boolQueryBuilderTop = boolQueryBuilder;
-        }
-        return boolQueryBuilderTop;
-    }
-
-    private static void boolQueryBuilderDynamicFields(Object object, BoolQueryBuilder boolQueryBuilder) {
+    private static void handleDynamicFields(Object object, BoolQueryBuilder boolQueryBuilder) {
         if (object instanceof EsBaseSearchParam) {
             EsBaseSearchParam esBaseSearchParam = (EsBaseSearchParam) object;
             if (esBaseSearchParam.getDynamicFieldsMap() != null) {
@@ -637,6 +484,220 @@ public class EsQueryParse {
 
     private static String getName(String k, DynamicSearchField v) {
         return StringUtils.isNotBlank(v.getNested()) ? v.getNested() + "." + k : k;
+    }
+
+    private static <E extends EsBaseSearchParam> BoolQueryBuilder getBoolQueryBuilder(E userInputQueryParam, String nestedPath) {
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        Class<?> clazz = userInputQueryParam.getClass();
+        List<Field> fields = getAllFields(clazz);
+
+        nestedPath = nestedPath == null ? "" : nestedPath;
+        for (Field field : fields) {
+            if ("serialVersionUID".equals(field.getName()) || field.isSynthetic()) {
+                continue;
+            }
+
+            Object value = getFieldValue(userInputQueryParam, field);
+
+            processFieldAnnotations(field, value, nestedPath, boolQueryBuilder, userInputQueryParam);
+
+        }
+
+        //动态字段
+        handleDynamicFields(userInputQueryParam, boolQueryBuilder);
+
+        //如果父子文档注解直接打在类上
+        return wrapWithParentChildQuery(userInputQueryParam, boolQueryBuilder);
+    }
+
+    private static List<Field> getAllFields(Class<?> clazz) {
+        List<Field> fields = new ArrayList<>();
+        while (clazz != null) {
+            fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
+            clazz = clazz.getSuperclass();
+        }
+        return fields;
+    }
+
+    private static Object getFieldValue(Object object, Field field) {
+        try {
+            return ClassUtils.getPublicMethod(object.getClass(), "get" + captureName(field.getName()))
+                    .invoke(object);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static boolean isEmpty(Object value, Field field) {
+        return (field.getType() == String.class && StringUtils.isBlank((String) value));
+    }
+
+    private static void processFieldAnnotations(Field field, Object value, String nestedPath,
+                                                BoolQueryBuilder boolQueryBuilder, Object userInputQueryParam) {
+        if (field.isAnnotationPresent(EsMulti.class) && value != null) {
+            handleEsMultiAnnotation(field, value, nestedPath, boolQueryBuilder);
+        }
+        if (field.isAnnotationPresent(EsLike.class) && value != null) {
+            handleEsLikeAnnotation(field, value, nestedPath, boolQueryBuilder);
+        }
+        if (field.isAnnotationPresent(EsNotLike.class) && value != null) {
+            handleEsNotLikeAnnotation(field, value, nestedPath, boolQueryBuilder);
+        }
+        if (field.isAnnotationPresent(EsEquals.class) && value != null) {
+            handleEsEqualsAnnotation(field, value, nestedPath, boolQueryBuilder);
+        }
+        if (field.isAnnotationPresent(EsNotEquals.class) && value != null) {
+            handleEsNotEqualsAnnotation(field, value, nestedPath, boolQueryBuilder);
+        }
+        if (field.isAnnotationPresent(EsRange.class) && value != null) {
+            handleEsRangeAnnotation(field, value, nestedPath, boolQueryBuilder);
+        }
+        if (field.isAnnotationPresent(EsIn.class) && value != null) {
+            handleEsInAnnotation(field, value, nestedPath, boolQueryBuilder);
+        }
+        if (field.isAnnotationPresent(EsNotNull.class)) {
+            handleEsNotNullAnnotation(field, nestedPath, boolQueryBuilder);
+        }
+        if (field.isAnnotationPresent(EsIsNull.class)) {
+            handleEsIsNullAnnotation(field, nestedPath, boolQueryBuilder);
+        }
+        if (field.isAnnotationPresent(EsMatchPhrase.class) && value != null) {
+            handleEsMatchPhraseAnnotation(field, value, nestedPath, boolQueryBuilder);
+        }
+        if (field.isAnnotationPresent(EsMatch.class) && value != null) {
+            handleEsMatchAnnotation(field, value, nestedPath, boolQueryBuilder);
+        }
+        if (field.isAnnotationPresent(EsNested.class) && value != null) {
+            handleEsNestedAnnotation(field, value, nestedPath, boolQueryBuilder);
+        }
+        if (field.isAnnotationPresent(EsHasChildRelation.class) && value != null) {
+            handleEsHasChildRelationAnnotation(field, value, nestedPath, boolQueryBuilder, userInputQueryParam);
+        }
+        if (field.isAnnotationPresent(EsHasParentRelation.class) && value != null) {
+            handleEsHasParentRelationAnnotation(field, value, nestedPath, boolQueryBuilder, userInputQueryParam);
+        }
+    }
+
+    // 处理 EsMulti 注解的字段
+    private static void handleEsMultiAnnotation(Field field, Object value, String nestedPath, BoolQueryBuilder boolQueryBuilder) {
+        EsMulti esMulti = field.getAnnotation(EsMulti.class);
+        BoolQueryBuilder multiBool = QueryBuilders.boolQuery();
+        if (value instanceof List<?>) {
+            List<?> valueList = (List<?>) value;
+            valueList.forEach(item -> {
+                BoolQueryBuilder itemQuery = getBoolQueryBuilder((EsBaseSearchParam) item, nestedPath);
+                if (esMulti.isAnd()) {
+                    multiBool.filter(itemQuery);
+                } else {
+                    multiBool.should(itemQuery);
+                }
+            });
+        } else {
+            multiBool.filter(getMultiQuery(field, value, nestedPath));
+        }
+        boolQueryBuilder.filter(multiBool);
+    }
+
+    // 处理 EsLike 注解的字段
+    private static void handleEsLikeAnnotation(Field field, Object value, String nestedPath, BoolQueryBuilder boolQueryBuilder) {
+        String val = wildcardOptimize((String) value);
+        WildcardQueryBuilder query = getLikeQuery(field, val, nestedPath);
+        boolQueryBuilder.filter(query);
+    }
+
+    // 处理 EsNotLike 注解的字段
+    private static void handleEsNotLikeAnnotation(Field field, Object value, String nestedPath, BoolQueryBuilder boolQueryBuilder) {
+        String val = wildcardOptimize((String) value);
+        WildcardQueryBuilder notLikeQuery = getNotLikeQuery(field, val, nestedPath);
+        boolQueryBuilder.mustNot().add(notLikeQuery);
+    }
+
+    // 处理 EsEquals 注解的字段
+    private static void handleEsEqualsAnnotation(Field field, Object value, String nestedPath, BoolQueryBuilder boolQueryBuilder) {
+        TermQueryBuilder query = getEqualsQuery(field, value, nestedPath);
+        boolQueryBuilder.filter(query);
+    }
+
+    // 处理 EsNotEquals 注解的字段
+    private static void handleEsNotEqualsAnnotation(Field field, Object value, String nestedPath, BoolQueryBuilder boolQueryBuilder) {
+        TermQueryBuilder query = getNotEqualsQuery(field, value, nestedPath);
+        boolQueryBuilder.mustNot().add(query);
+    }
+
+    // 处理 EsRange 注解的字段
+    private static void handleEsRangeAnnotation(Field field, Object value, String nestedPath, BoolQueryBuilder boolQueryBuilder) {
+        RangeQueryBuilder query = getRangeQuery(field, value, nestedPath);
+        boolQueryBuilder.filter(query);
+    }
+
+    // 处理 EsIn 注解的字段
+    private static void handleEsInAnnotation(Field field, Object value, String nestedPath, BoolQueryBuilder boolQueryBuilder) {
+        EsIn esIn = field.getAnnotation(EsIn.class);
+        QueryBuilder query = getInQuery(field, (List<?>) value, nestedPath);
+        boolQueryBuilder.filter(query);
+    }
+
+    // 处理 EsNotNull 注解的字段
+    private static void handleEsNotNullAnnotation(Field field, String nestedPath, BoolQueryBuilder boolQueryBuilder) {
+        ExistsQueryBuilder query = getNotNullQuery(field, nestedPath);
+        boolQueryBuilder.filter(query);
+    }
+
+    // 处理 EsIsNull 注解的字段
+    private static void handleEsIsNullAnnotation(Field field, String nestedPath, BoolQueryBuilder boolQueryBuilder) {
+        BoolQueryBuilder query = getIsNullQuery(field, nestedPath);
+        boolQueryBuilder.filter(query);
+    }
+
+    // 处理 EsMatchPhrase 注解的字段
+    private static void handleEsMatchPhraseAnnotation(Field field, Object value, String nestedPath, BoolQueryBuilder boolQueryBuilder) {
+        MatchPhraseQueryBuilder matchPhrase = getMatchPhrase(field, value, nestedPath);
+        boolQueryBuilder.filter(matchPhrase);
+    }
+
+    // 处理 EsMatch 注解的字段
+    private static void handleEsMatchAnnotation(Field field, Object value, String nestedPath, BoolQueryBuilder boolQueryBuilder) {
+        MatchQueryBuilder match = getMatch(field, value, nestedPath);
+        boolQueryBuilder.filter(match);
+    }
+
+    // 处理 EsNested 注解的字段
+    private static void handleEsNestedAnnotation(Field field, Object value, String nestedPath, BoolQueryBuilder boolQueryBuilder) {
+        NestedQueryBuilder query = getNestedQuery(field, (EsBaseSearchParam) value);
+        boolQueryBuilder.filter(query);
+    }
+
+    // 处理父子文档关系的字段（HasChild 和 HasParent）
+    private static void handleEsHasChildRelationAnnotation(Field field, Object value, String nestedPath, BoolQueryBuilder boolQueryBuilder,
+                                                           Object userInputQueryParam) {
+        HasChildQueryBuilder childQueryBuilder = getHasChildQueryBuilder(field.getAnnotation(EsHasChildRelation.class),
+                getBoolQueryBuilder((EsBaseSearchParam) value, nestedPath));
+        boolQueryBuilder.filter(childQueryBuilder);
+    }
+
+    private static void handleEsHasParentRelationAnnotation(Field field, Object value, String nestedPath, BoolQueryBuilder boolQueryBuilder,
+                                                            Object userInputQueryParam) {
+        HasParentQueryBuilder parentQueryBuilder = getHasParentQueryBuilder(getBoolQueryBuilder((EsBaseSearchParam) value, nestedPath),
+                field.getAnnotation(EsHasParentRelation.class));
+        boolQueryBuilder.filter(parentQueryBuilder);
+    }
+
+    private static BoolQueryBuilder wrapWithParentChildQuery(Object userInputQueryParam, BoolQueryBuilder boolQueryBuilder) {
+        BoolQueryBuilder boolQueryBuilderTop;
+        if (userInputQueryParam.getClass().isAnnotationPresent(EsHasChildRelation.class)) {
+            boolQueryBuilderTop = QueryBuilders.boolQuery();
+            HasChildQueryBuilder hashChildQuery = getHasChildQueryBuilder(
+                    userInputQueryParam.getClass().getAnnotation(EsHasChildRelation.class), boolQueryBuilder);
+            boolQueryBuilderTop.filter(hashChildQuery);
+        } else if (userInputQueryParam.getClass().isAnnotationPresent(EsHasParentRelation.class)) {
+            boolQueryBuilderTop = QueryBuilders.boolQuery();
+            HasParentQueryBuilder parentQueryBuilder = getHasParentQueryBuilder(
+                    boolQueryBuilder, userInputQueryParam.getClass().getAnnotation(EsHasParentRelation.class));
+            boolQueryBuilderTop.filter(parentQueryBuilder);
+        } else {
+            boolQueryBuilderTop = boolQueryBuilder;
+        }
+        return boolQueryBuilderTop;
     }
 
     private static String wildcardOptimize(String value) {
