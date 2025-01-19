@@ -66,7 +66,7 @@ public class EsQueryClient {
             pageResult.setPageNum(request.getPageNum());
             pageResult.setPageSize(request.getPageSize());
             pageResult.setTotalPage(
-                    Long.valueOf((pageResult.getTotalCount() - 1) / Long.valueOf(request.getPageSize()) + 1L).intValue());
+                    Long.valueOf((pageResult.getTotalCount() - 1) / (long) request.getPageSize() + 1L).intValue());
             pageResult.setAggregationResult(EsQueryResultParse.injectAggregations(searchResponse.getAggregations()));
         } catch (IOException ex) {
             log.error("es查询时出现异常, index: {}, params: {}", request.getIndex(), request, ex);

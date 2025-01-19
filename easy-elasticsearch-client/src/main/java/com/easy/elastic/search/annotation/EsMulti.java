@@ -15,4 +15,9 @@ import java.lang.annotation.Target;
 @Target({ ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface EsMulti {
+    /**
+     * 嵌套之间是否为与的关系，默认为或
+     * @return
+     */
+    boolean isAnd() default false;
 }
